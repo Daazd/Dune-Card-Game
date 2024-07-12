@@ -5,6 +5,7 @@
   text-align: center;
 }
 
+
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -39,4 +40,19 @@
 
 .read-the-docs {
   color: #888;
+}
+
+.App {
+  text-align: center;
+  padding: 20px;
+}
+
+.faction {
+  margin-bottom: 20px;
+}
+
+.cards {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
 }

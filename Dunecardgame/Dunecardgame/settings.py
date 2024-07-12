@@ -79,7 +79,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'dune_card_game',
-        'USER': 'Taylor',
+        'USER': 'taylor',
         'PASSWORD': 'Emerica23#',
         'HOST': 'localhost',
         'PORT': '5432',
