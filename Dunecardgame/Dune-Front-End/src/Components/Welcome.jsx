@@ -36,10 +36,10 @@ const Welcome = () => {
         onClick={handleStartGame} 
         sx={{ 
           marginTop: 4,
-          backgroundColor: '#328ba8',  // Custom background color
-          color: 'white',  // Custom text color
+          backgroundColor: '#328ba8',  
+          color: 'white',  
           '&:hover': {
-            backgroundColor: '#e64a19'  // Custom hover color
+            backgroundColor: '#e64a19'  
           }
         }}
       >
