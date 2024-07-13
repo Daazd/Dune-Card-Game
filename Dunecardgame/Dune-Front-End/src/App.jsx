@@ -1,77 +1,68 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Container, Box, Typography, Button } from '@mui/material';
+// src/App.jsx
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { Container, Box, Typography, Select, MenuItem, Button } from '@mui/material';
 import Arena from './Components/Arena';
 import Welcome from './Components/Welcome';
+import CardList from './Components/CardList';
+import { getCards, getDecks, getCardsByDeck } from './api';
 import './App.css';
+import axios from 'axios';
 
 const App = () => {
-  const initialCards = {
-    'Bene Gesserit': [
-      {
-        name: 'Reverend Mother',
-        faction: 'Bene Gesserit',
-        attack: 5,
-        defense: 3,
-        abilities: ['Voice Command', 'Truthsayer'],
-        image: 'path/to/reverend-mother.jpg'
-      },
-      {
-        name: 'Sisterhood Acolyte',
-        faction: 'Bene Gesserit',
-        attack: 2,
-        defense: 2,
-        abilities: ['Stealth', 'Agility'],
-        image: 'path/to/sisterhood-acolyte.jpg'
-      }
-    ],
-    'Fremen': [
-      {
-        name: 'Stilgar',
-        faction: 'Fremen',
-        attack: 6,
-        defense: 4,
-        abilities: ['Desert Ambush', 'Sandwalking'],
-        image: 'path/to/stilgar.jpg'
-      },
-      {
-        name: 'Chani',
-        faction: 'Fremen',
-        attack: 4,
-        defense: 3,
-        abilities: ['Skilled Fighter', 'Loyalty'],
-        image: 'path/to/chani.jpg'
-      }
-    ],
-    'Empire': [
-      {
-        name: 'Emperor Shaddam IV',
-        faction: 'Empire',
-        attack: 7,
-        defense: 5,
-        abilities: ['Imperial Command', 'Treachery'],
-        image: 'path/to/emperor-shaddam-iv.jpg'
-      },
-      {
-        name: 'Sardaukar Soldier',
-        faction: 'Empire',
-        attack: 3,
-        defense: 3,
-        abilities: ['Elite Training', 'Fearless'],
-        image: 'path/to/sardaukar-soldier.jpg'
-      }
-    ]
-  };
-
+  const [cards, setCards] = useState([]);
+  const [decks, setDecks] = useState([]);
+  const [selectedDeck, setSelectedDeck] = useState('');
   const [player1Deck, setPlayer1Deck] = useState([]);
   const [player2Deck, setPlayer2Deck] = useState([]);
   const [activePlayer, setActivePlayer] = useState(1);
   const [selectedCard, setSelectedCard] = useState(null);
   const [targetCard, setTargetCard] = useState(null);
+  const [faction1, setFaction1] = useState('');
+  const [faction2, setFaction2] = useState('');
 
-  const selectDeck = (player, faction) => {
-    if (player === 1) setPlayer1Deck(initialCards[faction]);
-    if (player === 2) setPlayer2Deck(initialCards[faction]);
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const cardData = await getCards();
+        setCards(cardData);
+        const deckData = await getDecks();
+        setDecks(deckData);
+      } catch (error) {
+        console.error('Error fetching initial data:', error);
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    const fetchCardsByDeck = async () => {
+      if (selectedDeck) {
+        try {
+          const response = await axios.get(`http://localhost:8000/api/decks/${selectedDeck}/cards/`);
+          setCards(response.data);
+        } catch (error) {
+          console.error('Error fetching cards by deck:', error);
+        }
+      }
+    };
+
+    fetchCardsByDeck();
+  }, [selectedDeck]);
+
+  const handleChange = (event) => {
+    setSelectedDeck(event.target.value);
+  };
+
+  const selectDeck = async (player, deckName) => {
+    try {
+      const selectedDeckCards = await getCardsByDeck(deckName);
+      if (player === 1) setPlayer1Deck(selectedDeckCards);
+      if (player === 2) setPlayer2Deck(selectedDeckCards);
+    } catch (error) {
+      console.error('Error fetching deck data:', error);
+    }
   };
 
   const playCard = (card) => {
@@ -95,8 +86,8 @@ const App = () => {
       const attacker = { ...selectedCard };
       const defender = { ...targetCard };
 
-      defender.defense -= attacker.attack;
-      if (defender.defense <= 0) {
+      defender.resistance -= attacker.command;
+      if (defender.resistance <= 0) {
         if (activePlayer === 1) {
           setPlayer2Deck(player2Deck.filter(card => card !== targetCard));
         } else {
@@ -129,39 +120,37 @@ const App = () => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', padding: 2, background: 'rgba(0, 0, 0, 0.5)', borderRadius: '10px' }}>
               <Box>
                 <Typography variant="h4" sx={{ color: 'white' }}>Player 1</Typography>
-                <Button 
-                  onClick={() => selectDeck(1, 'Bene Gesserit')} 
-                  sx={{ margin: 1, backgroundColor: '#673ab7', color: 'white', '&:hover': { backgroundColor: '#5e35b1' } }}>
-                  Select Bene Gesserit Deck
-                </Button>
-                <Button 
-                  onClick={() => selectDeck(1, 'Fremen')} 
-                  sx={{ margin: 1, backgroundColor: '#009688', color: 'white', '&:hover': { backgroundColor: '#00897b' } }}>
-                  Select Fremen Deck
-                </Button>
-                <Button 
-                  onClick={() => selectDeck(1, 'Empire')} 
-                  sx={{ margin: 1, backgroundColor: '#f44336', color: 'white', '&:hover': { backgroundColor: '#e53935' } }}>
-                  Select Empire Deck
-                </Button>
+                <Select
+                  value={faction1}
+                  onChange={(e) => {
+                    setFaction1(e.target.value);
+                    selectDeck(1, e.target.value);
+                  }}
+                  displayEmpty
+                  sx={{ margin: 1, backgroundColor: '#673ab7', color: 'white' }}
+                >
+                  <MenuItem value="" disabled>Select Deck</MenuItem>
+                  {decks.map(deck => (
+                    <MenuItem key={deck} value={deck}>{deck}</MenuItem>
+                  ))}
+                </Select>
               </Box>
               <Box>
                 <Typography variant="h4" sx={{ color: 'white' }}>Player 2</Typography>
-                <Button 
-                  onClick={() => selectDeck(2, 'Bene Gesserit')} 
-                  sx={{ margin: 1, backgroundColor: '#673ab7', color: 'white', '&:hover': { backgroundColor: '#5e35b1' } }}>
-                  Select Bene Gesserit Deck
-                </Button>
-                <Button 
-                  onClick={() => selectDeck(2, 'Fremen')} 
-                  sx={{ margin: 1, backgroundColor: '#009688', color: 'white', '&:hover': { backgroundColor: '#00897b' } }}>
-                  Select Fremen Deck
-                </Button>
-                <Button 
-                  onClick={() => selectDeck(2, 'Empire')} 
-                  sx={{ margin: 1, backgroundColor: '#f44336', color: 'white', '&:hover': { backgroundColor: '#e53935' } }}>
-                  Select Empire Deck
-                </Button>
+                <Select
+                  value={faction2}
+                  onChange={(e) => {
+                    setFaction2(e.target.value);
+                    selectDeck(2, e.target.value);
+                  }}
+                  displayEmpty
+                  sx={{ margin: 1, backgroundColor: '#673ab7', color: 'white' }}
+                >
+                  <MenuItem value="" disabled>Select Deck</MenuItem>
+                  {decks.map(deck => (
+                    <MenuItem key={deck} value={deck}>{deck}</MenuItem>
+                  ))}
+                </Select>
               </Box>
             </Box>
             <Arena 
@@ -177,9 +166,13 @@ const App = () => {
             <Box sx={{ textAlign: 'center', marginTop: 4 }}>
               <Button variant="contained" onClick={resolveAttack} disabled={!selectedCard || !targetCard}>Attack</Button>
               <Button variant="contained" onClick={endTurn} sx={{ marginLeft: 2 }}>End Turn</Button>
+              <Link to="/cards">
+                <Button variant="contained" sx={{ marginLeft: 2 }}>View All Cards</Button>
+              </Link>
             </Box>
           </Container>
         } />
+        <Route path="/cards" element={<CardList />} />
       </Routes>
     </Router>
   );
