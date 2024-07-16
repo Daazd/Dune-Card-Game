@@ -1,5 +1,3 @@
-// src/Components/AuthPage.jsx
-// src/Components/AuthPage.jsx
 import React, { useState } from 'react';
 import { Box, Button, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';

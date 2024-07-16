@@ -1,4 +1,3 @@
-// src/Components/AuthModal.jsx
 import React from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Typography, Box } from '@mui/material';
 

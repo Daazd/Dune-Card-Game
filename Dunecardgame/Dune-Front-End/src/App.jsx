@@ -123,7 +123,7 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Welcome />} />
+      <Route path="/" element={<Welcome setAuthToken={setAuthToken} setIsAdmin={setIsAdmin} authToken={authToken} isAdmin={isAdmin} />} />
         <Route path="/auth" element={<AuthPage setAuthToken={setAuthToken} setIsAdmin={setIsAdmin} />} />
         <Route path="/admin" element={<Admin authToken={authToken} isAdmin={isAdmin} />} />
         <Route path="/game" element={
