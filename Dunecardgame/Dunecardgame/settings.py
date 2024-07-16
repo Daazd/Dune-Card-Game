@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'gameapp',
+    'rest_framework.authtoken',
     'rest_framework',
 ]
 
@@ -55,6 +56,12 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'Dunecardgame.urls'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
 
 TEMPLATES = [
     {

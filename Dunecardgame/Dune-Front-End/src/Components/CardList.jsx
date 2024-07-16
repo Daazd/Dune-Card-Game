@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Grid } from '@mui/material';
+import { Container, Grid, Button, Box } from '@mui/material';
+import { Link } from 'react-router-dom';
 import FlippableCard from './FlippableCard';
 import '../App.css';
 
@@ -22,9 +23,16 @@ const CardList = () => {
 
   return (
     <Container className="card-list-container" maxWidth={false}>
+      <Box sx={{ textAlign: 'center', marginBottom: 4 }}>
+        <Link to="/game" style={{ textDecoration: 'none' }}>
+          <Button variant="contained" color="primary">
+            Back to Arena
+          </Button>
+        </Link>
+      </Box>
       <Grid container spacing={4} justifyContent="center">
         {cards.map((card) => (
-          <Grid item key={card.id} >
+          <Grid item key={card.id}>
             <FlippableCard card={card} />
           </Grid>
         ))}
@@ -34,5 +42,6 @@ const CardList = () => {
 };
 
 export default CardList;
+
 
 

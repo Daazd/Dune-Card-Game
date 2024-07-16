@@ -1,10 +1,13 @@
-// src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { Container, Box, Typography, Select, MenuItem, Button } from '@mui/material';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Container, Box, Typography, Select, MenuItem } from '@mui/material';
 import Arena from './Components/Arena';
 import Welcome from './Components/Welcome';
 import CardList from './Components/CardList';
+import Login from './Components/Login';
+import Register from './Components/Register';
+import Admin from './Components/Admin';
+import AuthPage from './Components/AuthPage';
 import { getCards, getDecks, getCardsByDeck } from './api';
 import './App.css';
 import axios from 'axios';
@@ -20,6 +23,8 @@ const App = () => {
   const [targetCard, setTargetCard] = useState(null);
   const [faction1, setFaction1] = useState('');
   const [faction2, setFaction2] = useState('');
+  const [authToken, setAuthToken] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -81,6 +86,14 @@ const App = () => {
     }
   };
 
+  const drawCard = (player) => {
+    if (player === 1 && player1Deck.length > 8) {
+      setPlayer1Deck([...player1Deck.slice(1), player1Deck[8]]);
+    } else if (player === 2 && player2Deck.length > 8) {
+      setPlayer2Deck([...player2Deck.slice(1), player2Deck[8]]);
+    }
+  };
+
   const resolveAttack = () => {
     if (selectedCard && targetCard) {
       const attacker = { ...selectedCard };
@@ -111,6 +124,8 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/" element={<Welcome />} />
+        <Route path="/auth" element={<AuthPage setAuthToken={setAuthToken} setIsAdmin={setIsAdmin} />} />
+        <Route path="/admin" element={<Admin authToken={authToken} isAdmin={isAdmin} />} />
         <Route path="/game" element={
           <Container>
             <Box sx={{ textAlign: 'center', marginBottom: 4 }}>
@@ -161,15 +176,10 @@ const App = () => {
               selectedCard={selectedCard} 
               targetCard={targetCard} 
               activePlayer={activePlayer}
-              selectDeck={selectDeck} 
+              drawCard={drawCard} 
+              resolveAttack={resolveAttack}
+              endTurn={endTurn}
             />
-            <Box sx={{ textAlign: 'center', marginTop: 4 }}>
-              <Button variant="contained" onClick={resolveAttack} disabled={!selectedCard || !targetCard}>Attack</Button>
-              <Button variant="contained" onClick={endTurn} sx={{ marginLeft: 2 }}>End Turn</Button>
-              <Link to="/cards">
-                <Button variant="contained" sx={{ marginLeft: 2 }}>View All Cards</Button>
-              </Link>
-            </Box>
           </Container>
         } />
         <Route path="/cards" element={<CardList />} />
@@ -179,3 +189,5 @@ const App = () => {
 };
 
 export default App;
+
+

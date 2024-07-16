@@ -32,6 +32,11 @@ class Card(models.Model):
 
     class Meta:
         db_table = 'cards2'  # Specify custom table name
+        
+    def save(self, *args, **kwargs):
+        if self.image_file:
+            self.image_file.name = self.image_file.name.split('/')[-1]
+        super(Card, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.name
