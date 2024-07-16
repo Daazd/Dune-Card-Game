@@ -6,6 +6,7 @@ import Welcome from './Components/Welcome';
 import CardList from './Components/CardList';
 import Login from './Components/Login';
 import Register from './Components/Register';
+import Account from './Components/Account';
 import Admin from './Components/Admin';
 import AuthPage from './Components/AuthPage';
 import { getCards, getDecks, getCardsByDeck } from './api';
@@ -25,6 +26,7 @@ const App = () => {
   const [faction2, setFaction2] = useState('');
   const [authToken, setAuthToken] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [username, setUsername] = useState('');
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -123,9 +125,10 @@ const App = () => {
   return (
     <Router>
       <Routes>
-      <Route path="/" element={<Welcome setAuthToken={setAuthToken} setIsAdmin={setIsAdmin} authToken={authToken} isAdmin={isAdmin} />} />
-        <Route path="/auth" element={<AuthPage setAuthToken={setAuthToken} setIsAdmin={setIsAdmin} />} />
+      <Route path="/" element={<Welcome setAuthToken={setAuthToken} setIsAdmin={setIsAdmin} authToken={authToken} isAdmin={isAdmin} setUsername={setUsername} />} />
+        <Route path="/auth" element={<AuthPage setAuthToken={setAuthToken} setIsAdmin={setIsAdmin} setUsername={setUsername} />} />
         <Route path="/admin" element={<Admin authToken={authToken} isAdmin={isAdmin} />} />
+        <Route path="/account" element={<Account authToken={authToken} />} />
         <Route path="/game" element={
           <Container>
             <Box sx={{ textAlign: 'center', marginBottom: 4 }}>

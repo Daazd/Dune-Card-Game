@@ -3,6 +3,7 @@ import { Box, Typography, Button, IconButton } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
+import PersonIcon from '@mui/icons-material/Person';
 import axios from 'axios';
 import AuthModal from './AuthModal';
 
@@ -105,6 +106,17 @@ const Welcome = ({ setAuthToken, setIsAdmin, authToken, isAdmin }) => {
             }}
           >
             <AdminPanelSettings fontSize="large" />
+          </IconButton>
+        )}
+        {authToken && (
+          <IconButton
+            onClick={() => navigate('/account')}
+            sx={{
+              color: 'white',
+              marginLeft: 2,
+            }}
+          >
+            <PersonIcon fontSize="large" />
           </IconButton>
         )}
       </Box>

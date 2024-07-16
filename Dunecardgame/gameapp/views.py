@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
 from .models import Card
 from .serializers import CardSerializer
 import logging
@@ -59,6 +61,34 @@ class LoginView(APIView):
         else:
             logger.warning(f"Failed login attempt for user: {username}")
             return Response({'error': 'Invalid username or password'}, status=status.HTTP_400_BAD_REQUEST)
+
+class UserDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            'username': user.username,
+            'email': user.email,
+        })
+
+    def put(self, request):
+        user = request.user
+        username = request.data.get('username')
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        if username:
+            user.username = username
+        if email:
+            user.email = email
+        if password:
+            user.set_password(password)
+        
+        user.save()
+
+        return Response({'message': 'User details updated successfully'}, status=status.HTTP_200_OK)
 
 
 

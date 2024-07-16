@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
+// src/Components/Arena.jsx
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, Card as MuiCard, CardContent, CardMedia, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { Link } from 'react-router-dom';
 
-const Arena = ({ player1Deck, player2Deck, playCard, selectTarget, selectedCard, targetCard, activePlayer, drawCard, resolveAttack, endTurn }) => {
+const Arena = ({ player1Deck, player2Deck, playCard, selectTarget, selectedCard, targetCard, activePlayer, drawCard, resolveAttack, endTurn, username }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [swapCards, setSwapCards] = useState([]);
   const [selectedSwapCards, setSelectedSwapCards] = useState([]);
-  
+
+  useEffect(() => {
+    if (activePlayer === 2) {
+      botPlay();
+    }
+  }, [activePlayer]);
+
   const handleOpenModal = (player) => {
     setSelectedPlayer(player);
     setModalOpen(true);
@@ -48,6 +55,18 @@ const Arena = ({ player1Deck, player2Deck, playCard, selectTarget, selectedCard,
     handleCloseModal();
   };
 
+  const botPlay = () => {
+    // Simple bot logic: select a random card from the bot's deck and target a random card from player1Deck
+    if (player2Deck.length > 0) {
+      const botCard = player2Deck[Math.floor(Math.random() * player2Deck.length)];
+      const targetCard = player1Deck[Math.floor(Math.random() * player1Deck.length)];
+      selectTarget(targetCard);
+      playCard(botCard);
+      resolveAttack();
+    }
+    endTurn();
+  };
+
   const renderCardRow = (deck, player) => {
     const faceUpCards = deck.slice(0, 5);
     const faceDownStack = deck.slice(5);
@@ -83,7 +102,7 @@ const Arena = ({ player1Deck, player2Deck, playCard, selectTarget, selectedCard,
         </Box>
         {faceDownStack.length > 0 && (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 2 }}>
-            <MuiCard sx={{ width: 180, height: 250, backgroundColor: '#f0f0f0', cursor: 'pointer', position: 'relative' }} onClick={() => handleOpenModal(player)}>
+            <MuiCard sx={{ width: 180, height: 250, backgroundColor: 'gray', cursor: 'pointer', position: 'relative' }} onClick={() => handleOpenModal(player)}>
               <CardContent>
                 <Typography variant="body2">Deck: {faceDownStack.length} cards</Typography>
               </CardContent>
@@ -156,9 +175,9 @@ const Arena = ({ player1Deck, player2Deck, playCard, selectTarget, selectedCard,
       <Box sx={{ width: '100%', maxWidth: '2000px', marginBottom: 4 }}>
         <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 4 }}>
-            <Typography variant="h4" sx={{ color: 'white', marginBottom: 2 }}>Player 1</Typography>
+            <Typography variant="h4" sx={{ color: 'white', marginBottom: 2 }}>{username}</Typography>
             {renderCardRow(player1Deck, 1)}
-            <Typography variant="h4" sx={{ color: 'white', marginBottom: 2, marginTop: 4 }}>Player 2</Typography>
+            <Typography variant="h4" sx={{ color: 'white', marginBottom: 2, marginTop: 4 }}>Bot Player</Typography>
             {renderCardRow(player2Deck, 2)}
           </Box>
           <Box sx={{ width: 300, display: 'flex', flexDirection: 'column', alignItems: 'center', marginLeft: 4, marginTop: 4 }}>
@@ -194,6 +213,7 @@ const Arena = ({ player1Deck, player2Deck, playCard, selectTarget, selectedCard,
 };
 
 export default Arena;
+
 
 
 
