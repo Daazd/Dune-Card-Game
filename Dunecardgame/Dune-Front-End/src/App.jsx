@@ -174,7 +174,9 @@ const App = () => {
               playCard={playCard} 
               selectTarget={selectTarget}
               username="Player 1"
-              selectedCard={selectedCard} 
+              selectedCard={selectedCard}
+              setSelectedCard={setSelectedCard}
+              setTargetCard={setTargetCard}  
               targetCard={targetCard} 
               activePlayer={activePlayer}
               drawCard={drawCard} 

@@ -10,7 +10,13 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Card
 from .serializers import CardSerializer
 import logging
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+class MyTokenObtainPairView(TokenObtainPairView):
+    pass
+
+class MyTokenRefreshView(TokenRefreshView):
+    pass
 class CardViewSet(viewsets.ModelViewSet):
     queryset = Card.objects.all()
     serializer_class = CardSerializer

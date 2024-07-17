@@ -2,18 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Card as MuiCard, CardContent, CardMedia, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { Link } from 'react-router-dom';
 
-const Arena = ({ player1Deck, setPlayer1Deck, player2Deck, setPlayer2Deck, username }) => {
+const Arena = ({
+  player1Deck, 
+  setPlayer1Deck, 
+  player2Deck, 
+  setPlayer2Deck, 
+  playCard, 
+  selectTarget, 
+  selectedCard, 
+  targetCard,
+  setTargetCard,
+  setSelectedCard,  
+  activePlayer, 
+  drawCard, 
+  resolveAttack, 
+  endTurn, 
+  username 
+}) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [swapCards, setSwapCards] = useState([]);
   const [selectedSwapCards, setSelectedSwapCards] = useState([]);
-  const [selectedCard, setSelectedCard] = useState(null);
-  const [targetCard, setTargetCard] = useState(null);
-  const [activePlayer, setActivePlayer] = useState(1);
 
   useEffect(() => {
     if (activePlayer === 2) {
-      botPlay();
+      setTimeout(botPlay, 100); // Give the browser some time to breathe
     }
   }, [activePlayer]);
 
@@ -57,102 +70,76 @@ const Arena = ({ player1Deck, setPlayer1Deck, player2Deck, setPlayer2Deck, usern
     handleCloseModal();
   };
 
-  const minimax = async (deck1, deck2, depth, isMaximizingPlayer, alpha = -Infinity, beta = Infinity) => {
-    if (depth === 0 || deck1.length === 0 || deck2.length === 0) {
-      return evaluateDecks(deck1, deck2);
+  const minimax = async (deck1, deck2, depth, isMaximizingPlayer, alpha = -Infinity, beta = Infinity, memo = new Map()) => {
+    const memoKey = `${deck1.map(c => c.id).join(',')}-${deck2.map(c => c.id).join(',')}-${depth}-${isMaximizingPlayer}`;
+    if (memo.has(memoKey)) {
+      return memo.get(memoKey);
     }
-  
+    
+    if (depth === 0 || deck1.length === 0 || deck2.length === 0) {
+      const score = evaluateDecks(deck1, deck2);
+      memo.set(memoKey, score);
+      return score;
+    }
+
     if (isMaximizingPlayer) {
       let maxEval = -Infinity;
       for (let card of deck2) {
         const newDeck2 = deck2.filter(c => c !== card);
-        const currentEval = await minimax(deck1, newDeck2, depth - 1, false, alpha, beta);
+        const currentEval = await minimax(deck1, newDeck2, depth - 1, false, alpha, beta, memo);
         maxEval = Math.max(maxEval, currentEval);
         alpha = Math.max(alpha, currentEval);
         if (beta <= alpha) break; // Alpha-beta pruning
       }
+      memo.set(memoKey, maxEval);
       return maxEval;
     } else {
       let minEval = Infinity;
       for (let card of deck1) {
         const newDeck1 = deck1.filter(c => c !== card);
-        const currentEval = await minimax(newDeck1, deck2, depth - 1, true, alpha, beta);
+        const currentEval = await minimax(newDeck1, deck2, depth - 1, true, alpha, beta, memo);
         minEval = Math.min(minEval, currentEval);
         beta = Math.min(beta, currentEval);
         if (beta <= alpha) break; // Alpha-beta pruning
       }
+      memo.set(memoKey, minEval);
       return minEval;
     }
   };
-  
+
+  const evaluateCard = (card) => {
+    return card.attack + card.defense;
+  };
+
   const evaluateDecks = (deck1, deck2) => {
-    // Custom evaluation function to assess the advantage of deck1 over deck2
     const deck1Score = deck1.reduce((acc, card) => acc + card.attack + card.defense, 0);
     const deck2Score = deck2.reduce((acc, card) => acc + card.attack + card.defense, 0);
     return deck1Score - deck2Score;
   };
-  
-  const botPlay = () => {
+
+  const botPlay = async () => {
     if (player2Deck.length > 0) {
       let bestMove;
       let bestValue = -Infinity;
-  
+
       for (let card of player2Deck) {
         const newDeck2 = player2Deck.filter(c => c !== card);
-        const moveValue = minimax(player1Deck, newDeck2, 3, false); // depth of 3 for example
-  
+        const moveValue = await minimax(player1Deck, newDeck2, 2, false); // depth of 2 for example
+
         if (moveValue > bestValue) {
           bestValue = moveValue;
           bestMove = card;
         }
       }
-  
+
       const bestTargetCard = player1Deck.reduce((bestCard, currentCard) => {
         return evaluateCard(currentCard) > evaluateCard(bestCard) ? currentCard : bestCard;
       });
-  
+
       setTargetCard(bestTargetCard);
       setSelectedCard(bestMove);
       resolveAttack();
     }
-  };
-  
-  const handlePlayCard = (card) => {
-    if (selectedCard) {
-      setTargetCard(card);
-    } else {
-      setSelectedCard(card);
-    }
-  };
-
-  const resolveAttack = () => {
-    if (selectedCard && targetCard) {
-      const updatedTargetCard = { ...targetCard, defense: targetCard.defense - selectedCard.attack };
-
-      if (updatedTargetCard.defense <= 0) {
-        if (activePlayer === 1) {
-          setPlayer2Deck(player2Deck.filter(card => card.id !== targetCard.id));
-        } else {
-          setPlayer1Deck(player1Deck.filter(card => card.id !== targetCard.id));
-        }
-      } else {
-        if (activePlayer === 1) {
-          const updatedDeck = player2Deck.map(card => card.id === targetCard.id ? updatedTargetCard : card);
-          setPlayer2Deck(updatedDeck);
-        } else {
-          const updatedDeck = player1Deck.map(card => card.id === targetCard.id ? updatedTargetCard : card);
-          setPlayer1Deck(updatedDeck);
-        }
-      }
-
-      setSelectedCard(null);
-      setTargetCard(null);
-      setActivePlayer(activePlayer === 1 ? 2 : 1);
-    }
-  };
-
-  const endTurn = () => {
-    setActivePlayer(activePlayer === 1 ? 2 : 1);
   };
 
   const renderCardRow = (deck, player) => {
@@ -165,7 +152,7 @@ const Arena = ({ player1Deck, setPlayer1Deck, player2Deck, setPlayer2Deck, usern
           {faceUpCards.map((card, index) => (
             <MuiCard
               key={index}
-              onClick={() => player === activePlayer ? handlePlayCard(card) : setTargetCard(card)}
+              onClick={() => player === activePlayer ? playCard(card) : selectTarget(card)}
               sx={{
                 width: 180,
                 margin: 1,
@@ -301,6 +288,7 @@ const Arena = ({ player1Deck, setPlayer1Deck, player2Deck, setPlayer2Deck, usern
 };
 
 export default Arena;
+
 
 
 
