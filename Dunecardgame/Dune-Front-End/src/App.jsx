@@ -98,21 +98,16 @@ const App = () => {
 
   const resolveAttack = () => {
     if (selectedCard && targetCard) {
-      const attacker = { ...selectedCard };
-      const defender = { ...targetCard };
-
-      defender.resistance -= attacker.command;
-      if (defender.resistance <= 0) {
+      targetCard.defense -= selectedCard.attack;
+      if (targetCard.defense <= 0) {
         if (activePlayer === 1) {
           setPlayer2Deck(player2Deck.filter(card => card !== targetCard));
         } else {
           setPlayer1Deck(player1Deck.filter(card => card !== targetCard));
         }
       }
-
       setSelectedCard(null);
       setTargetCard(null);
-      setActivePlayer(activePlayer === 1 ? 2 : 1);
     }
   };
 
@@ -172,10 +167,13 @@ const App = () => {
               </Box>
             </Box>
             <Arena 
-              player1Deck={player1Deck} 
-              player2Deck={player2Deck} 
+              player1Deck={player1Deck}
+              setPlayer1Deck={setPlayer1Deck} 
+              player2Deck={player2Deck}
+              setPlayer2Deck={setPlayer2Deck} 
               playCard={playCard} 
               selectTarget={selectTarget}
+              username="Player 1"
               selectedCard={selectedCard} 
               targetCard={targetCard} 
               activePlayer={activePlayer}

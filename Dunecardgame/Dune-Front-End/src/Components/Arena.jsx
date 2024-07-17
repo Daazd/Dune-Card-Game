@@ -1,13 +1,15 @@
-// src/Components/Arena.jsx
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Card as MuiCard, CardContent, CardMedia, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { Link } from 'react-router-dom';
 
-const Arena = ({ player1Deck, player2Deck, playCard, selectTarget, selectedCard, targetCard, activePlayer, drawCard, resolveAttack, endTurn, username }) => {
+const Arena = ({ player1Deck, setPlayer1Deck, player2Deck, setPlayer2Deck, username }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [swapCards, setSwapCards] = useState([]);
   const [selectedSwapCards, setSelectedSwapCards] = useState([]);
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [targetCard, setTargetCard] = useState(null);
+  const [activePlayer, setActivePlayer] = useState(1);
 
   useEffect(() => {
     if (activePlayer === 2) {
@@ -46,25 +48,111 @@ const Arena = ({ player1Deck, player2Deck, playCard, selectTarget, selectedCard,
     });
 
     if (selectedPlayer === 1) {
-      player1Deck = newDeck;
+      setPlayer1Deck(newDeck);
     } else {
-      player2Deck = newDeck;
+      setPlayer2Deck(newDeck);
     }
 
     setSelectedSwapCards([]);
     handleCloseModal();
   };
 
+  const minimax = async (deck1, deck2, depth, isMaximizingPlayer, alpha = -Infinity, beta = Infinity) => {
+    if (depth === 0 || deck1.length === 0 || deck2.length === 0) {
+      return evaluateDecks(deck1, deck2);
+    }
+  
+    if (isMaximizingPlayer) {
+      let maxEval = -Infinity;
+      for (let card of deck2) {
+        const newDeck2 = deck2.filter(c => c !== card);
+        const currentEval = await minimax(deck1, newDeck2, depth - 1, false, alpha, beta);
+        maxEval = Math.max(maxEval, currentEval);
+        alpha = Math.max(alpha, currentEval);
+        if (beta <= alpha) break; // Alpha-beta pruning
+      }
+      return maxEval;
+    } else {
+      let minEval = Infinity;
+      for (let card of deck1) {
+        const newDeck1 = deck1.filter(c => c !== card);
+        const currentEval = await minimax(newDeck1, deck2, depth - 1, true, alpha, beta);
+        minEval = Math.min(minEval, currentEval);
+        beta = Math.min(beta, currentEval);
+        if (beta <= alpha) break; // Alpha-beta pruning
+      }
+      return minEval;
+    }
+  };
+  
+  const evaluateDecks = (deck1, deck2) => {
+    // Custom evaluation function to assess the advantage of deck1 over deck2
+    const deck1Score = deck1.reduce((acc, card) => acc + card.attack + card.defense, 0);
+    const deck2Score = deck2.reduce((acc, card) => acc + card.attack + card.defense, 0);
+    return deck1Score - deck2Score;
+  };
+  
   const botPlay = () => {
-    // Simple bot logic: select a random card from the bot's deck and target a random card from player1Deck
     if (player2Deck.length > 0) {
-      const botCard = player2Deck[Math.floor(Math.random() * player2Deck.length)];
-      const targetCard = player1Deck[Math.floor(Math.random() * player1Deck.length)];
-      selectTarget(targetCard);
-      playCard(botCard);
+      let bestMove;
+      let bestValue = -Infinity;
+  
+      for (let card of player2Deck) {
+        const newDeck2 = player2Deck.filter(c => c !== card);
+        const moveValue = minimax(player1Deck, newDeck2, 3, false); // depth of 3 for example
+  
+        if (moveValue > bestValue) {
+          bestValue = moveValue;
+          bestMove = card;
+        }
+      }
+  
+      const bestTargetCard = player1Deck.reduce((bestCard, currentCard) => {
+        return evaluateCard(currentCard) > evaluateCard(bestCard) ? currentCard : bestCard;
+      });
+  
+      setTargetCard(bestTargetCard);
+      setSelectedCard(bestMove);
       resolveAttack();
     }
-    endTurn();
+  };
+  
+  const handlePlayCard = (card) => {
+    if (selectedCard) {
+      setTargetCard(card);
+    } else {
+      setSelectedCard(card);
+    }
+  };
+
+  const resolveAttack = () => {
+    if (selectedCard && targetCard) {
+      const updatedTargetCard = { ...targetCard, defense: targetCard.defense - selectedCard.attack };
+
+      if (updatedTargetCard.defense <= 0) {
+        if (activePlayer === 1) {
+          setPlayer2Deck(player2Deck.filter(card => card.id !== targetCard.id));
+        } else {
+          setPlayer1Deck(player1Deck.filter(card => card.id !== targetCard.id));
+        }
+      } else {
+        if (activePlayer === 1) {
+          const updatedDeck = player2Deck.map(card => card.id === targetCard.id ? updatedTargetCard : card);
+          setPlayer2Deck(updatedDeck);
+        } else {
+          const updatedDeck = player1Deck.map(card => card.id === targetCard.id ? updatedTargetCard : card);
+          setPlayer1Deck(updatedDeck);
+        }
+      }
+
+      setSelectedCard(null);
+      setTargetCard(null);
+      setActivePlayer(activePlayer === 1 ? 2 : 1);
+    }
+  };
+
+  const endTurn = () => {
+    setActivePlayer(activePlayer === 1 ? 2 : 1);
   };
 
   const renderCardRow = (deck, player) => {
@@ -77,7 +165,7 @@ const Arena = ({ player1Deck, player2Deck, playCard, selectTarget, selectedCard,
           {faceUpCards.map((card, index) => (
             <MuiCard
               key={index}
-              onClick={() => player === activePlayer ? playCard(card) : selectTarget(card)}
+              onClick={() => player === activePlayer ? handlePlayCard(card) : setTargetCard(card)}
               sx={{
                 width: 180,
                 margin: 1,
@@ -213,6 +301,9 @@ const Arena = ({ player1Deck, player2Deck, playCard, selectTarget, selectedCard,
 };
 
 export default Arena;
+
+
+
 
 
 

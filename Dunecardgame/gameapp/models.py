@@ -29,6 +29,9 @@ class Card(models.Model):
     flavor_text = models.TextField(null=True, blank=True, db_column='Flavor Text')
     artist = models.CharField(max_length=255, db_column='Artist')
     image_file = models.ImageField(upload_to='dune_card_images/', blank=True, null=True)
+    attack = models.IntegerField(default=0)
+    defense = models.IntegerField(default=0)
+
 
     class Meta:
         db_table = 'cards2'  # Specify custom table name
