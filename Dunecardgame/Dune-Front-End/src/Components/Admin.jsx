@@ -10,7 +10,6 @@ const Admin = ({ authToken, isAdmin }) => {
       alert('Access denied. Admins only.');
       return;
     }
-    // Perform admin tasks
     
   };
 

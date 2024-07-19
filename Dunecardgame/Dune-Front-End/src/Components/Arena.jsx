@@ -1,28 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Card as MuiCard, CardContent, CardMedia, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { Box, Typography, Card as MuiCard, CardContent, CardMedia, Dialog, DialogActions, DialogContent, DialogTitle, Button } from '@mui/material';
 import { Link } from 'react-router-dom';
 
 const Arena = ({
-  player1Deck, 
-  setPlayer1Deck, 
-  player2Deck, 
-  setPlayer2Deck, 
-  playCard, 
-  selectTarget, 
-  selectedCard, 
+  player1Deck,
+  setPlayer1Deck,
+  player2Deck,
+  setPlayer2Deck,
+  playCard,
+  selectTarget,
+  selectedCard,
   targetCard,
   setTargetCard,
-  setSelectedCard,  
-  activePlayer, 
-  drawCard, 
-  resolveAttack, 
-  endTurn, 
-  username 
+  setSelectedCard,
+  activePlayer,
+  drawCard,
+  resolveAttack,
+  endTurn,
+  username
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [swapCards, setSwapCards] = useState([]);
+  const [swapDeckCards, setSwapDeckCards] = useState([]);
   const [selectedSwapCards, setSelectedSwapCards] = useState([]);
+  const [selectedHandCards, setSelectedHandCards] = useState([]);
+  const [swapAllowed, setSwapAllowed] = useState({ player1: true, player2: true });
 
   useEffect(() => {
     if (activePlayer === 2) {
@@ -31,9 +33,12 @@ const Arena = ({
   }, [activePlayer]);
 
   const handleOpenModal = (player) => {
-    setSelectedPlayer(player);
-    setModalOpen(true);
-    setSwapCards(player === 1 ? player1Deck.slice(5, 15) : player2Deck.slice(5, 15));
+    if ((player === 1 && swapAllowed.player1) || (player === 2 && swapAllowed.player2)) {
+      setSelectedPlayer(player);
+      setModalOpen(true);
+      const deck = player === 1 ? player1Deck.slice(5, 15) : player2Deck.slice(5, 15);
+      setSwapDeckCards(deck);
+    }
   };
 
   const handleCloseModal = () => {
@@ -52,92 +57,54 @@ const Arena = ({
     });
   };
 
+  const handleSelectHandCard = (card) => {
+    setSelectedHandCards((prev) => {
+      if (prev.includes(card)) {
+        return prev.filter(c => c !== card);
+      } else if (prev.length < 3) {
+        return [...prev, card];
+      } else {
+        return prev;
+      }
+    });
+  };
+
   const handleConfirmSwap = () => {
+    if (selectedHandCards.length !== selectedSwapCards.length) {
+      return; // Ensure the same number of cards are selected for swapping
+    }
+
     const playerDeck = selectedPlayer === 1 ? player1Deck : player2Deck;
     const newDeck = [...playerDeck];
 
-    selectedSwapCards.forEach((card, index) => {
-      newDeck[5 + index] = card;
+    selectedHandCards.forEach((handCard, index) => {
+      const handCardIndex = newDeck.indexOf(handCard);
+      const swapCard = selectedSwapCards[index];
+      const swapCardIndex = playerDeck.indexOf(swapCard);
+
+      newDeck[handCardIndex] = swapCard;
+      newDeck[swapCardIndex] = handCard;
     });
 
     if (selectedPlayer === 1) {
       setPlayer1Deck(newDeck);
+      setSwapAllowed({ ...swapAllowed, player1: false });
     } else {
       setPlayer2Deck(newDeck);
+      setSwapAllowed({ ...swapAllowed, player2: false });
     }
 
+    setSelectedHandCards([]);
     setSelectedSwapCards([]);
     handleCloseModal();
   };
 
-  const minimax = async (deck1, deck2, depth, isMaximizingPlayer, alpha = -Infinity, beta = Infinity, memo = new Map()) => {
-    const memoKey = `${deck1.map(c => c.id).join(',')}-${deck2.map(c => c.id).join(',')}-${depth}-${isMaximizingPlayer}`;
-    if (memo.has(memoKey)) {
-      return memo.get(memoKey);
-    }
-    
-    if (depth === 0 || deck1.length === 0 || deck2.length === 0) {
-      const score = evaluateDecks(deck1, deck2);
-      memo.set(memoKey, score);
-      return score;
-    }
-
-    if (isMaximizingPlayer) {
-      let maxEval = -Infinity;
-      for (let card of deck2) {
-        const newDeck2 = deck2.filter(c => c !== card);
-        const currentEval = await minimax(deck1, newDeck2, depth - 1, false, alpha, beta, memo);
-        maxEval = Math.max(maxEval, currentEval);
-        alpha = Math.max(alpha, currentEval);
-        if (beta <= alpha) break; // Alpha-beta pruning
-      }
-      memo.set(memoKey, maxEval);
-      return maxEval;
-    } else {
-      let minEval = Infinity;
-      for (let card of deck1) {
-        const newDeck1 = deck1.filter(c => c !== card);
-        const currentEval = await minimax(newDeck1, deck2, depth - 1, true, alpha, beta, memo);
-        minEval = Math.min(minEval, currentEval);
-        beta = Math.min(beta, currentEval);
-        if (beta <= alpha) break; // Alpha-beta pruning
-      }
-      memo.set(memoKey, minEval);
-      return minEval;
-    }
-  };
-
-  const evaluateCard = (card) => {
-    return card.attack + card.defense;
-  };
-
-  const evaluateDecks = (deck1, deck2) => {
-    const deck1Score = deck1.reduce((acc, card) => acc + card.attack + card.defense, 0);
-    const deck2Score = deck2.reduce((acc, card) => acc + card.attack + card.defense, 0);
-    return deck1Score - deck2Score;
-  };
-
-  const botPlay = async () => {
+  const botPlay = () => {
     if (player2Deck.length > 0) {
-      let bestMove;
-      let bestValue = -Infinity;
-
-      for (let card of player2Deck) {
-        const newDeck2 = player2Deck.filter(c => c !== card);
-        const moveValue = await minimax(player1Deck, newDeck2, 2, false); // depth of 2 for example
-
-        if (moveValue > bestValue) {
-          bestValue = moveValue;
-          bestMove = card;
-        }
-      }
-
-      const bestTargetCard = player1Deck.reduce((bestCard, currentCard) => {
-        return evaluateCard(currentCard) > evaluateCard(bestCard) ? currentCard : bestCard;
-      });
-
-      setTargetCard(bestTargetCard);
-      setSelectedCard(bestMove);
+      const botCard = player2Deck[Math.floor(Math.random() * player2Deck.length)];
+      const targetCard = player1Deck[Math.floor(Math.random() * player1Deck.length)];
+      setTargetCard(targetCard);
+      setSelectedCard(botCard);
       resolveAttack();
     }
   };
@@ -211,14 +178,65 @@ const Arena = ({
       <DialogTitle>Swap Cards</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
-          {swapCards.map((card, index) => (
+          {swapDeckCards.map((card, index) => (
             <MuiCard
               key={index}
               onClick={() => handleSelectSwapCard(card)}
               sx={{
                 width: 180,
                 margin: 1,
-                border: selectedSwapCards.includes(card) ? '2px solid green' : '1px solid #000',
+                border: selectedSwapCards.includes(card) ? '2px solid blue' : '1px solid #000',
+                cursor: 'pointer',
+              }}
+            >
+              <CardMedia
+                component="img"
+                height="100%"
+                image={`http://localhost:8000/media/dune_card_images/${card.image_file}`}
+                alt={card.name}
+                style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+              />
+              <CardContent>
+                <Typography variant="h6">{card.name}</Typography>
+                <Typography variant="body2">Attack: {card.attack}</Typography>
+                <Typography variant="body2">Defense: {card.defense}</Typography>
+              </CardContent>
+            </MuiCard>
+          ))}
+        </Box>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', marginTop: 2 }}>
+          {selectedPlayer === 1 ? player1Deck.slice(0, 5).map((card, index) => (
+            <MuiCard
+              key={index}
+              onClick={() => handleSelectHandCard(card)}
+              sx={{
+                width: 180,
+                margin: 1,
+                border: selectedHandCards.includes(card) ? '2px solid green' : '1px solid #000',
+                cursor: 'pointer',
+              }}
+            >
+              <CardMedia
+                component="img"
+                height="100%"
+                image={`http://localhost:8000/media/dune_card_images/${card.image_file}`}
+                alt={card.name}
+                style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+              />
+              <CardContent>
+                <Typography variant="h6">{card.name}</Typography>
+                <Typography variant="body2">Attack: {card.attack}</Typography>
+                <Typography variant="body2">Defense: {card.defense}</Typography>
+              </CardContent>
+            </MuiCard>
+          )) : player2Deck.slice(0, 5).map((card, index) => (
+            <MuiCard
+              key={index}
+              onClick={() => handleSelectHandCard(card)}
+              sx={{
+                width: 180,
+                margin: 1,
+                border: selectedHandCards.includes(card) ? '2px solid green' : '1px solid #000',
                 cursor: 'pointer',
               }}
             >
@@ -240,7 +258,7 @@ const Arena = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={handleCloseModal} color="primary">Cancel</Button>
-        <Button onClick={handleConfirmSwap} color="primary" disabled={selectedSwapCards.length !== 3}>Confirm Swap</Button>
+        <Button onClick={handleConfirmSwap} color="primary" disabled={selectedSwapCards.length !== 3 || selectedHandCards.length !== 3}>Confirm Swap</Button>
       </DialogActions>
     </Dialog>
   );
@@ -274,10 +292,10 @@ const Arena = ({
             ) : (
               <Typography sx={{ color: 'white', marginBottom: 2 }}>No card selected</Typography>
             )}
-            <Button variant="contained" onClick={resolveAttack} disabled={!selectedCard || !targetCard} sx={{ marginBottom: 2 }}>Attack</Button>
-            <Button variant="contained" onClick={endTurn} sx={{ marginBottom: 2 }}>End Turn</Button>
+            <Button variant="contained" onClick={resolveAttack} disabled={!selectedCard || !targetCard} sx={{ marginBottom: 2, backgroundColor: '#673ab7' }}>Attack</Button>
+            <Button variant="contained" onClick={endTurn} sx={{ marginBottom: 2, backgroundColor: '#673ab7' }}>End Turn</Button>
             <Link to="/cards">
-              <Button variant="contained">View All Cards</Button>
+              <Button variant="contained" sx={{ backgroundColor: '#673ab7' }}>View All Cards</Button>
             </Link>
           </Box>
         </Box>
@@ -288,12 +306,3 @@ const Arena = ({
 };
 
 export default Arena;
-
-
-
-
-
-
-
-
-
