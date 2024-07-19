@@ -8,10 +8,10 @@ def normalize(name):
 # Database connection details
 conn = psycopg2.connect(
     dbname="dune_card_game",
-    user="taylor",
-    password="Emerica23#",
-    host="localhost",
-    port="5432"
+    user="",
+    password="",
+    host="",
+    port=""
 )
 cur = conn.cursor()
 
