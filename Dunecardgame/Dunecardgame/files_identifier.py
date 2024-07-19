@@ -4,10 +4,10 @@ import psycopg2
 try:
     conn = psycopg2.connect(
         dbname="dune_card_game",
-        user="taylor",
-        password="Emerica23#",
-        host="localhost",
-        port="5432"
+        user="",
+        password="",
+        host="",
+        port=""
     )
     print("Database connection established.")
 except Exception as e:
