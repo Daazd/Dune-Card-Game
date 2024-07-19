@@ -2,8 +2,9 @@ node_modules
 package-lock.json
 package.json
 venv
-Dunecardgame/settings.py
-Dunecardgame/files_identifier.py
-Dunecardgame/image_adding.py
-Dunecardgame/image_grabber.py
-Dunecardgame/import_data.py
+/Dunecardgame/Dunecardgame/settings.py
+/Dunecardgame/Dunecardgame/files_identifier.py
+/Dunecardgame/Dunecardgame/image_adding.py
+/Dunecardgame/Dunecardgame/image_grabber.py
+//Dunecardgame/Dunecardgame/import_data.py
+//Dunecardgame/Dunecardgame/attack_defense.py
