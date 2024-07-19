@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Card as MuiCard, CardContent, CardMedia, Dialog, DialogActions, DialogContent, DialogTitle, Button } from '@mui/material';
-import { Link } from 'react-router-dom';
+import { Box, Typography, Card as MuiCard, CardContent, CardMedia, Dialog, DialogActions, DialogContent, DialogTitle, Button, IconButton } from '@mui/material';
+import { Link, useNavigate } from 'react-router-dom';
+import CottageIcon from '@mui/icons-material/Cottage';
 
 const Arena = ({
   player1Deck,
@@ -25,6 +26,7 @@ const Arena = ({
   const [selectedSwapCards, setSelectedSwapCards] = useState([]);
   const [selectedHandCards, setSelectedHandCards] = useState([]);
   const [swapAllowed, setSwapAllowed] = useState({ player1: true, player2: true });
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (activePlayer === 2) {
@@ -301,6 +303,17 @@ const Arena = ({
         </Box>
       </Box>
       {renderSwapModal()}
+      <IconButton
+        onClick={() => navigate('/')}
+        sx={{
+          color: '#673ab7',
+          position: 'fixed',
+          top: 16,
+          right: 16,
+        }}
+      >
+        <CottageIcon fontSize="large" />
+      </IconButton>
     </Box>
   );
 };

@@ -2,3 +2,8 @@ node_modules
 package-lock.json
 package.json
 venv
+settings.py
+files_identifier.py
+image_adding.py
+image_grabber.py
+import_data.py

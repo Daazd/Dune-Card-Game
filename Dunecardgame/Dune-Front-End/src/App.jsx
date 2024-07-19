@@ -127,12 +127,12 @@ const App = () => {
         <Route path="/game" element={
           <Container>
             <Box sx={{ textAlign: 'center', marginBottom: 4 }}>
-              <Typography variant="h2" sx={{ color: 'white', textShadow: '2px 2px 4px rgba(0,0,0,0.6)' }}>Dune Card Game Arena</Typography>
-              <Typography variant="h5" sx={{ color: 'white', textShadow: '2px 2px 4px rgba(0,0,0,0.6)' }}>Player {activePlayer}'s Turn</Typography>
+              <Typography variant="h2" sx={{ color: '#e64a19', textShadow: '2px 2px 4px rgba(0,0,0,0.6)' }}>Dune Card Game Arena</Typography>
+              <Typography variant="h5" sx={{ color: '#e64a19', textShadow: '2px 2px 4px rgba(0,0,0,0.6)' }}>Player {activePlayer}'s Turn</Typography>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', padding: 2, background: 'rgba(0, 0, 0, 0.5)', borderRadius: '10px' }}>
               <Box>
-                <Typography variant="h4" sx={{ color: 'white' }}>Player 1</Typography>
+                <Typography variant="h4" sx={{ color: '#e64a19' }}>Player 1</Typography>
                 <Select
                   value={faction1}
                   onChange={(e) => {
@@ -149,7 +149,7 @@ const App = () => {
                 </Select>
               </Box>
               <Box>
-                <Typography variant="h4" sx={{ color: 'white' }}>Player 2</Typography>
+                <Typography variant="h4" sx={{ color: '#e64a19' }}>Player 2</Typography>
                 <Select
                   value={faction2}
                   onChange={(e) => {
