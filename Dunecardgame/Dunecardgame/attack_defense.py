@@ -5,10 +5,10 @@ from psycopg2 import sql
 try:
     conn = psycopg2.connect(
         dbname="dune_card_game",
-        user="taylor",
-        password="Emerica23#",
-        host="localhost",
-        port="5432"
+        user="",
+        password="",
+        host="",
+        port=""
     )
     conn.autocommit = False  # Ensure autocommit is off
 except psycopg2.Error as e:
