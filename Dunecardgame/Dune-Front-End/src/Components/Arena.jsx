@@ -113,63 +113,67 @@ const Arena = ({
 
   const renderCardRow = (deck, player) => {
     const faceUpCards = deck.slice(0, 5);
+
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'nowrap', width: '100%' }}>
+        {faceUpCards.map((card, index) => (
+          <MuiCard
+            key={index}
+            onClick={() => player === activePlayer ? playCard(card) : selectTarget(card)}
+            sx={{
+              width: 180,
+              margin: 1,
+              border: selectedCard === card || targetCard === card ? '2px solid red' : 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <CardMedia
+              component="img"
+              height="100%"
+              image={`http://localhost:8000/media/dune_card_images/${card.image_file}`}
+              alt={card.name}
+              style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+            />
+            <CardContent>
+              <Typography variant="h6">{card.name}</Typography>
+              <Typography variant="body2">Attack: {card.attack}</Typography>
+              <Typography variant="body2">Defense: {card.defense}</Typography>
+            </CardContent>
+          </MuiCard>
+        ))}
+      </Box>
+    );
+  };
+
+  const renderDeck = (deck, player) => {
     const faceDownStack = deck.slice(5);
 
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'nowrap', width: '100%' }}>
-          {faceUpCards.map((card, index) => (
-            <MuiCard
-              key={index}
-              onClick={() => player === activePlayer ? playCard(card) : selectTarget(card)}
-              sx={{
-                width: 180,
-                margin: 1,
-                border: selectedCard === card || targetCard === card ? '2px solid red' : 'none',
-                cursor: 'pointer',
-              }}
-            >
-              <CardMedia
-                component="img"
-                height="100%"
-                image={`http://localhost:8000/media/dune_card_images/${card.image_file}`}
-                alt={card.name}
-                style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-              />
-              <CardContent>
-                <Typography variant="h6">{card.name}</Typography>
-                <Typography variant="body2">Attack: {card.attack}</Typography>
-                <Typography variant="body2">Defense: {card.defense}</Typography>
-              </CardContent>
-            </MuiCard>
-          ))}
-        </Box>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 2 }}>
         {faceDownStack.length > 0 && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 2 }}>
-            <MuiCard sx={{ width: 180, height: 250, backgroundColor: 'gray', cursor: 'pointer', position: 'relative' }} onClick={() => handleOpenModal(player)}>
-              <CardContent>
-                <Typography variant="body2">Deck: {faceDownStack.length} cards</Typography>
-              </CardContent>
-              <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
-                {Array.from({ length: Math.min(3, faceDownStack.length) }).map((_, idx) => (
-                  <CardMedia
-                    key={idx}
-                    component="img"
-                    image={`http://localhost:8000/media/dune_card_images/House_Card_Back.jpg`}
-                    alt="Face Down Card"
-                    sx={{
-                      width: '100%',
-                      height: '100%',
-                      position: 'absolute',
-                      top: `${idx * 10}px`,
-                      left: `${idx * 10}px`,
-                      transform: `rotate(${idx * 2}deg)`,
-                    }}
-                  />
-                ))}
-              </Box>
-            </MuiCard>
-          </Box>
+          <MuiCard sx={{ width: 180, height: 250, backgroundColor: 'gray', cursor: 'pointer', position: 'relative' }} onClick={() => handleOpenModal(player)}>
+            <CardContent>
+              <Typography variant="body2">Deck: {faceDownStack.length} cards</Typography>
+            </CardContent>
+            <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+              {Array.from({ length: Math.min(3, faceDownStack.length) }).map((_, idx) => (
+                <CardMedia
+                  key={idx}
+                  component="img"
+                  image={`http://localhost:8000/media/dune_card_images/House_Card_Back.jpg`}
+                  alt="Face Down Card"
+                  sx={{
+                    width: '100%',
+                    height: '100%',
+                    position: 'absolute',
+                    top: `${idx * 10}px`,
+                    left: `${idx * 10}px`,
+                    transform: `rotate(${idx * 2}deg)`,
+                  }}
+                />
+              ))}
+            </Box>
+          </MuiCard>
         )}
       </Box>
     );
@@ -177,8 +181,8 @@ const Arena = ({
 
   const renderSwapModal = () => (
     <Dialog open={modalOpen} onClose={handleCloseModal} maxWidth="lg" fullWidth>
-      <DialogTitle>Swap Cards</DialogTitle>
-      <DialogContent>
+      <DialogTitle sx={{ backgroundColor: '#3949ab', color: "#e65100" }}>Swap Cards</DialogTitle>
+      <DialogContent sx={{ backgroundColor: '#455a64' }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
           {swapDeckCards.map((card, index) => (
             <MuiCard
@@ -258,9 +262,9 @@ const Arena = ({
           ))}
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={handleCloseModal} color="primary">Cancel</Button>
-        <Button onClick={handleConfirmSwap} color="primary" disabled={selectedSwapCards.length !== 3 || selectedHandCards.length !== 3}>Confirm Swap</Button>
+      <DialogActions sx={{ backgroundColor: '#3949ab' }}>
+        <Button onClick={handleCloseModal} sx={{color: "#e65100" }}>Cancel</Button>
+        <Button onClick={handleConfirmSwap} sx={{color: "#e65100" }} disabled={selectedSwapCards.length !== 3 || selectedHandCards.length !== 3}>Confirm Swap</Button>
       </DialogActions>
     </Dialog>
   );
@@ -268,40 +272,48 @@ const Arena = ({
   return (
     <Box sx={{ padding: 2, backgroundColor: '#282c34', minHeight: '100vh', display: 'flex', justifyContent: 'center', overflowY: 'auto' }}>
       <Box sx={{ width: '100%', maxWidth: '2000px', marginBottom: 4 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 4 }}>
-            <Typography variant="h4" sx={{ color: 'white', marginBottom: 2 }}>{username}</Typography>
-            {renderCardRow(player1Deck, 1)}
-            <Typography variant="h4" sx={{ color: 'white', marginBottom: 2, marginTop: 4 }}>Bot Player</Typography>
-            {renderCardRow(player2Deck, 2)}
-          </Box>
-          <Box sx={{ width: 300, display: 'flex', flexDirection: 'column', alignItems: 'center', marginLeft: 4, marginTop: 4 }}>
-            <Typography variant="h6" sx={{ color: 'white', marginBottom: 2 }}>Selected Card</Typography>
-            {selectedCard ? (
-              <MuiCard sx={{ maxWidth: 345, marginBottom: 2 }}>
-                <CardMedia
-                  component="img"
-                  height="200"
-                  image={`http://localhost:8000/media/dune_card_images/${selectedCard.image_file}`}
-                  alt={selectedCard.name}
-                />
-                <CardContent>
-                  <Typography variant="h6">{selectedCard.name}</Typography>
-                  <Typography variant="body2">Attack: {selectedCard.attack}</Typography>
-                  <Typography variant="body2">Defense: {selectedCard.defense}</Typography>
-                </CardContent>
-              </MuiCard>
-            ) : (
-              <Typography sx={{ color: 'white', marginBottom: 2 }}>No card selected</Typography>
-            )}
-            <Button variant="contained" onClick={resolveAttack} disabled={!selectedCard || !targetCard} sx={{ marginBottom: 2, backgroundColor: '#673ab7' }}>Attack</Button>
-            <Button variant="contained" onClick={endTurn} sx={{ marginBottom: 2, backgroundColor: '#673ab7' }}>End Turn</Button>
-            <Link to="/cards">
-              <Button variant="contained" sx={{ backgroundColor: '#673ab7' }}>View All Cards</Button>
-            </Link>
-          </Box>
+        {/* Player 1 Deck */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 4 }}>
+          <Typography variant="h4" sx={{ color: '#e65100', marginBottom: 2 }}>{username}</Typography>
+          {renderDeck(player1Deck, 1)}
+          {renderCardRow(player1Deck, 1)}
+        </Box>
+
+        {/* Selected Card and Buttons */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginY: 4 }}>
+          <Typography variant="h6" sx={{ color: '#e65100', marginBottom: 2 }}>Selected Card</Typography>
+          {selectedCard ? (
+            <MuiCard sx={{ color: '#e65100', maxWidth: 345, marginBottom: 2, backgroundColor: 'black' }}>
+              <CardMedia
+                component="img"
+                height="200"
+                image={`http://localhost:8000/media/dune_card_images/${selectedCard.image_file}`}
+                alt={selectedCard.name}
+              />
+              <CardContent sx={{ color: '#e65100', marginBottom: 2 }}>
+                <Typography variant="h6">{selectedCard.name}</Typography>
+                <Typography variant="body2">Attack: {selectedCard.attack}</Typography>
+                <Typography variant="body2">Defense: {selectedCard.defense}</Typography>
+              </CardContent>
+            </MuiCard>
+          ) : (
+            <Typography sx={{ color: '#e65100', marginBottom: 2 }}>No card selected</Typography>
+          )}
+          <Button variant="contained" onClick={resolveAttack} disabled={!selectedCard || !targetCard} sx={{ marginBottom: 2, backgroundColor: '#673ab7' }}>Attack</Button>
+          <Button variant="contained" onClick={endTurn} sx={{ marginBottom: 2, backgroundColor: '#673ab7' }}>End Turn</Button>
+          <Link to="/cards">
+            <Button variant="contained" sx={{ backgroundColor: '#673ab7' }}>View All Cards</Button>
+          </Link>
+        </Box>
+
+        {/* Player 2 Deck */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 4 }}>
+          {renderCardRow(player2Deck, 2, { marginLeft: '-40px' })} {/* Adjust margin to move row slightly left */}
+          {renderDeck(player2Deck, 2)}
+          <Typography variant="h4" sx={{ color: '#e65100', marginBottom: 2 }}>Bot Player</Typography>
         </Box>
       </Box>
+
       {renderSwapModal()}
       <IconButton
         onClick={() => navigate('/')}
