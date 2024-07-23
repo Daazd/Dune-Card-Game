@@ -47,7 +47,7 @@ jobs:
     - name: Check network accessibility
       run: |
           echo "Checking network accessibility..."
-          curl -v https://127.0.0.1:46215
+          curl -k -v https://127.0.0.1:46215
   
     - name: Deploy to Kubernetes
       env:
