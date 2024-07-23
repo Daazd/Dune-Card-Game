@@ -36,13 +36,26 @@ jobs:
       with:
         version: 'v1.21.0'
 
+    - name: Debug kubeconfig
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+      run: |
+        echo "${KUBE_CONFIG_DATA}" | base64 --decode > kubeconfig
+        echo "Kubeconfig contents:"
+        cat kubeconfig
+  
+    - name: Check network accessibility
+      run: |
+          echo "Checking network accessibility..."
+          curl -v https://127.0.0.1:46215
+  
     - name: Deploy to Kubernetes
       env:
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
       run: |
-         echo "${KUBE_CONFIG_DATA}" | base64 --decode > kubeconfig
-         kubectl --kubeconfig=kubeconfig get nodes
-         kubectl --kubeconfig=kubeconfig apply -f k8s/
+          echo "${KUBE_CONFIG_DATA}" | base64 --decode > kubeconfig
+          kubectl --kubeconfig=kubeconfig get nodes
+          kubectl --kubeconfig=kubeconfig apply -f k8s
 
 #push
 
