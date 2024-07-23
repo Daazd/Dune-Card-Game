@@ -27,7 +27,7 @@ jobs:
 
     - name: Build and push backend Docker image
       run: |
-        cd Dunecardgame/backend
+        cd Dunecardgame/Dunecardgame
         docker build -t ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest .
         docker push ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest
 
