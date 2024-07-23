@@ -40,8 +40,9 @@ jobs:
       env:
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
       run: |
-        echo "${KUBE_CONFIG_DATA}" | base64 --decode > kubeconfig
-        kubectl --kubeconfig=kubeconfig apply -f k8s/
+         echo "${KUBE_CONFIG_DATA}" | base64 --decode > kubeconfig
+         kubectl --kubeconfig=kubeconfig get nodes
+         kubectl --kubeconfig=kubeconfig apply -f k8s/
 
 
 
