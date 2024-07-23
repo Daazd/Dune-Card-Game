@@ -6,9 +6,6 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: './index.html',
-      output: {
-        dir: 'dist'
-      }
     }
   }
 })
