@@ -44,6 +44,8 @@ jobs:
          kubectl --kubeconfig=kubeconfig get nodes
          kubectl --kubeconfig=kubeconfig apply -f k8s/
 
+#push
+
 
 
 
