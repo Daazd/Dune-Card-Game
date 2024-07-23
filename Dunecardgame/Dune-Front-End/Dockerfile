@@ -1,36 +1,30 @@
-
-FROM node:16 as build
+# Use the official Node.js image as the base image
+FROM node:18 as build
 
 # Set the working directory in the container
 WORKDIR /usr/src/app
 
-
+# Copy package.json and package-lock.json files to the working directory
 COPY package*.json ./
 
 # Install the dependencies
 RUN npm install
 
-
+# Copy the rest of the application code to the working directory
 COPY . .
 
 # Build the application for production
 RUN npm run build
 
 # Use a smaller base image for the production environment
-FROM node:16-alpine
+FROM nginx:alpine
 
-
-WORKDIR /usr/src/app
-
-
-COPY --from=build /usr/src/app/build ./build
-
-
-COPY package*.json ./
-RUN npm install --only=production
+# Copy the built application from the previous stage
+COPY --from=build /usr/src/app/dist /usr/share/nginx/html
 
 # Expose the port the app runs on
-EXPOSE 3000
+EXPOSE 80
 
 # Command to run the application
-CMD ["npm", "start"]
+CMD ["nginx", "-g", "daemon off;"]
+

@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+  
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - frontend
+    environment:
+      - DJANGO_ENV=production
+      - DATABASE_URL=postgres://user:password@db:5432/dbname
+    volumes:
+      - ./backend:/usr/src/app
