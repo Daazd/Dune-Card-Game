@@ -25,7 +25,7 @@ jobs:
         docker push ${{ secrets.DOCKER_USERNAME }}/your-app:latest
 
     - name: Set up kubectl
-      uses: azure/setup-kubectl@v2
+      uses: azure/setup-kubectl@v1
       with:
         version: 'v1.21.0'
 
