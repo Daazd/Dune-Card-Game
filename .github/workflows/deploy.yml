@@ -21,8 +21,8 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/your-app:latest .
-        docker push ${{ secrets.DOCKER_USERNAME }}/your-app:latest
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/dune-game:latest .
+        docker push ${{ secrets.DOCKER_USERNAME }}/dune-game:latest
 
     - name: Set up kubectl
       uses: azure/setup-kubectl@v1
