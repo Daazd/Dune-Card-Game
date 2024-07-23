@@ -5,7 +5,10 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      input: './index.html'
+      input: './index.html',
+      output: {
+        dir: 'dist'
+      }
     }
   }
 })
