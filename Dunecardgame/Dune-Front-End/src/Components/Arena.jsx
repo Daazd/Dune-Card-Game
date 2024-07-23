@@ -15,6 +15,7 @@ const Arena = ({
   setTargetCard,
   setSelectedCard,
   activePlayer,
+  setActivePlayer,
   drawCard,
   resolveAttack,
   endTurn,
@@ -30,7 +31,8 @@ const Arena = ({
 
   useEffect(() => {
     if (activePlayer === 2) {
-      setTimeout(botPlay, 100); // Give the browser some time to breathe
+      botPlay();
+      setTimeout(botPlay, 1000); // Give the browser some time to breathe and make the bot's actions more visible
     }
   }, [activePlayer]);
 
@@ -103,11 +105,27 @@ const Arena = ({
 
   const botPlay = () => {
     if (player2Deck.length > 0) {
-      const botCard = player2Deck[Math.floor(Math.random() * player2Deck.length)];
-      const targetCard = player1Deck[Math.floor(Math.random() * player1Deck.length)];
-      setTargetCard(targetCard);
+      const botFaceUpCards = player2Deck.slice(0, 5);
+      const botCard = botFaceUpCards[Math.floor(Math.random() * botFaceUpCards.length)];
+      const playerFaceUpCards = player1Deck.slice(0, 5);
+      const targetCard = playerFaceUpCards[Math.floor(Math.random() * playerFaceUpCards.length)];
+      
       setSelectedCard(botCard);
-      resolveAttack();
+      setTargetCard(targetCard);
+      
+      // Add a delay to make the bot's actions more visible
+      setTimeout(() => {
+        resolveAttack();
+        // End the bot's turn after attacking
+        setTimeout(() => {
+          setActivePlayer(1);
+          setSelectedCard(null);
+          setTargetCard(null);
+        }, 1000);
+      }, 1000);
+    } else {
+      // If the bot has no cards, end its turn
+      setActivePlayer(1);
     }
   };
 
@@ -117,9 +135,17 @@ const Arena = ({
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'nowrap', width: '100%' }}>
         {faceUpCards.map((card, index) => (
-          <MuiCard
-            key={index}
-            onClick={() => player === activePlayer ? playCard(card) : selectTarget(card)}
+            <MuiCard
+              key={index}
+              onClick={() => {
+                if (activePlayer === 1) {
+                  if (player === 1) {
+                    playCard(card);
+                  } else {
+                    selectTarget(card);
+                  }
+                }
+            }}
             sx={{
               width: 180,
               margin: 1,
@@ -299,8 +325,17 @@ const Arena = ({
           ) : (
             <Typography sx={{ color: '#e65100', marginBottom: 2 }}>No card selected</Typography>
           )}
-          <Button variant="contained" onClick={resolveAttack} disabled={!selectedCard || !targetCard} sx={{ marginBottom: 2, backgroundColor: '#673ab7' }}>Attack</Button>
-          <Button variant="contained" onClick={endTurn} sx={{ marginBottom: 2, backgroundColor: '#673ab7' }}>End Turn</Button>
+          <Button variant="contained" onClick={() => {
+            resolveAttack();
+            // Switch to bot's turn after player attacks
+            setTimeout(() => setActivePlayer(2), 1000);
+            }} 
+            disabled={!selectedCard || !targetCard || activePlayer !== 1} 
+            sx={{ marginBottom: 2, backgroundColor: '#673ab7' }}
+          >
+            Attack
+          </Button>
+          <Button variant="contained" onClick={endTurn} disabled={activePlayer !== 1} sx={{ marginBottom: 2, backgroundColor: '#673ab7' }}>End Turn</Button>
           <Link to="/cards">
             <Button variant="contained" sx={{ backgroundColor: '#673ab7' }}>View All Cards</Button>
           </Link>

@@ -106,15 +106,20 @@ const App = () => {
           setPlayer1Deck(player1Deck.filter(card => card !== targetCard));
         }
       }
+      setActivePlayer(activePlayer === 1 ? 2 : 1);
       setSelectedCard(null);
       setTargetCard(null);
     }
   };
 
   const endTurn = () => {
+    setActivePlayer(activePlayer === 1 ? 2 : 1);
     setSelectedCard(null);
     setTargetCard(null);
-    setActivePlayer(activePlayer === 1 ? 2 : 1);
+  
+    if (activePlayer === 1) {
+      setTimeout(botPlay, 1000); // Trigger bot play after a short delay
+    }
   };
 
   return (
@@ -179,6 +184,7 @@ const App = () => {
               setTargetCard={setTargetCard}  
               targetCard={targetCard} 
               activePlayer={activePlayer}
+              setActivePlayer={setActivePlayer}
               drawCard={drawCard} 
               resolveAttack={resolveAttack}
               endTurn={endTurn}
