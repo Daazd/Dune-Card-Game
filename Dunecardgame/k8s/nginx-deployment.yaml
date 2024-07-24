@@ -1,19 +1,36 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-deployment
+  name: dune-frontend-deployment
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: nginx
+      app: dune-frontend
   template:
     metadata:
       labels:
-        app: nginx
+        app: dune-frontend
     spec:
       containers:
-      - name: nginx
-        image: nginx:latest
+      - name: dune-frontend
+        image: dazdd/dune-frontend:latest
         ports:
-        - containerPort: 80
+        - containerPort: 80  # Assuming React app is served on port 80, adjust if different
+        env:
+        - name: REACT_APP_API_URL
+          value: "http://dune-backend-service:8000"  # This allows the frontend to communicate with the backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dune-frontend-service
+spec:
+  selector:
+    app: dune-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: NodePort  # This allows external access to the frontend

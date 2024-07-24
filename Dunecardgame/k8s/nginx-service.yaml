@@ -1,12 +1,27 @@
-apiVersion: v1
-kind: Service
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: nginx-service
+  name: dune-backend-deployment
 spec:
+  replicas: 2
   selector:
-    app: nginx
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 80
-  type: NodePort
+    matchLabels:
+      app: dune-backend
+  template:
+    metadata:
+      labels:
+        app: dune-backend
+    spec:
+      containers:
+      - name: dune-backend
+        image: dazdd/dune-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          value: "postgres://duneuser:$(POSTGRES_PASSWORD)@postgres-service:5432/dunedb"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: postgres-password
