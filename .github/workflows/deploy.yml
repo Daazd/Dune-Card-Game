@@ -9,7 +9,7 @@ on:
 jobs:
   build-and-deploy:
     runs-on: self-hosted
-    
+
     steps:
     - uses: actions/checkout@v2
     
@@ -92,31 +92,34 @@ jobs:
         # Verify the file is valid YAML
         python -c "import yaml; yaml.safe_load(open('${GITHUB_WORKSPACE}/kubeconfig.yaml'))"
 
+    - name: Debug kubeconfig content
+      run: |
+        echo "Kubeconfig content:"
+        cat ${GITHUB_WORKSPACE}/kubeconfig.yaml
+
     - name: Install kubectl
       uses: azure/setup-kubectl@v1
       with:
         version: 'v1.21.0'
 
     - name: Deploy to LKE
-      env:
-        KUBECONFIG: ${GITHUB_WORKSPACE}/kubeconfig.yaml
       run: |
         # Verify kubeconfig content
+        export KUBECONFIG=${GITHUB_WORKSPACE}/kubeconfig.yaml
+        
         echo "Kubeconfig content:"
         cat ${GITHUB_WORKSPACE}/kubeconfig.yaml
-        export KUBECONFIG=${GITHUB_WORKSPACE}/kubeconfig.yaml
         
         kubectl config view
         
         kubectl apply -f ./Dunecardgame/k8s/
 
     - name: Verify deployment
-      env:
-        KUBECONFIG: $(pwd)/kubeconfig.yaml
       run: |
         export KUBECONFIG=${GITHUB_WORKSPACE}/kubeconfig.yaml
         kubectl get pods
         kubectl get services
+
 
 
 
