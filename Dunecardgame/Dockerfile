@@ -22,6 +22,8 @@ RUN echo "Directory structure:" && \
     cat /usr/src/app/Dunecardgame/settings.py && \
     echo "Content of gameapp directory:" && \
     ls -la /usr/src/app/gameapp && \
+    echo "Content of gameapp/apps.py:" && \
+    cat /usr/src/app/gameapp/apps.py && \
     echo "PYTHONPATH:" && \
     echo $PYTHONPATH
 

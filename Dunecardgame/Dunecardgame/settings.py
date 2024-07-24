@@ -20,7 +20,7 @@ print(f"BASE_DIR: {BASE_DIR}")
 print(f"Current working directory: {os.getcwd()}")
 print(f"Contents of current directory: {os.listdir('.')}")
 print(f"Contents of parent directory: {os.listdir('..')}")
-print(f"Python path: {sys.path}")
+print(f"Python path before modification: {sys.path}")
 
 
 sys.path.insert(0, str(BASE_DIR))
