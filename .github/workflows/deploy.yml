@@ -83,6 +83,11 @@ jobs:
         # Verify the file is valid YAML
         python -c "import yaml; yaml.safe_load(open('kubeconfig.yaml'))"
 
+    - name: Install Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
     - name: Install kubectl
       uses: azure/setup-kubectl@v1
       with:
