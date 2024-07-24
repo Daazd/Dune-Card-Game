@@ -64,29 +64,12 @@ jobs:
         linode-cli --version
         linode-cli regions list
 
-    - name: List LKE clusters
+    - name: Set Cluster ID
       run: |
-        echo "Available LKE clusters:"
-        linode-cli lke clusters-list --json | jq -r '.[] | "ID: \(.id), Label: \(.label), API Endpoint: \(.api_endpoints[0])"'
+        echo "CLUSTER_ID=204261" >> $GITHUB_ENV
 
-    - name: Parse cluster information
-      run: |
-        echo "Parsing cluster information"
-        cat clusters.json | jq '.'
-        echo "Attempting to extract cluster ID"
-        CLUSTER_ID=$(cat clusters.json | jq -r '.[0].id')
-        echo "First cluster ID: $CLUSTER_ID"
-  
-    - name: Extract LKE Cluster ID
-      run: |
-        echo "LKE_CLUSTER_ID=$(echo ${{ secrets.LKE_CLUSTER_ID }} | tr -dc '0-9')" >> $GITHUB_ENV
-  
     - name: Get LKE kubeconfig
       run: |
-        if [ -z "$CLUSTER_ID" ]; then
-          echo "Error: No LKE cluster found"
-          exit 1
-        fi
         echo "Using Cluster ID: $CLUSTER_ID"
         linode-cli lke kubeconfig-view $CLUSTER_ID --text > kubeconfig.yaml
         if [ $? -ne 0 ]; then
@@ -94,8 +77,11 @@ jobs:
           exit 1
         fi
         echo "Successfully retrieved kubeconfig"
+        # Redact sensitive information before displaying
+        sed -i 's/certificate-authority-data:.*/certificate-authority-data: REDACTED/' kubeconfig.yaml
+        sed -i 's/token:.*/token: REDACTED/' kubeconfig.yaml
         cat kubeconfig.yaml
-        
+
     - name: Install kubectl
       uses: azure/setup-kubectl@v1
       with:
@@ -103,12 +89,17 @@ jobs:
 
     - name: Deploy to LKE
       run: |
-        kubectl --kubeconfig=kubeconfig.yaml apply -f ./Dunecardgame/k8s/
+        # Use the kubeconfig we just retrieved
+        export KUBECONFIG=./kubeconfig.yaml
+        
+        # Apply your Kubernetes configurations
+        kubectl apply -f ./Dunecardgame/k8s/
 
     - name: Verify deployment
       run: |
-        kubectl --kubeconfig=kubeconfig.yaml get pods
-        kubectl --kubeconfig=kubeconfig.yaml get services
+        export KUBECONFIG=./kubeconfig.yaml
+        kubectl get pods
+        kubectl get services
 
 #push
 
