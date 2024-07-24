@@ -2,19 +2,22 @@
 import os
 import sys
 
+
 def main():
     print(f"Current working directory: {os.getcwd()}")
     print(f"Contents of current directory: {os.listdir('.')}")
-    print(f"Python path before: {sys.path}")
-
-    # Add the Dunecardgame directory to the Python path
-    dunecardgame_path = os.path.abspath(os.path.dirname(__file__))
-    sys.path.insert(0, dunecardgame_path)
-    sys.path.insert(0, os.path.join(dunecardgame_path, 'Dunecardgame'))
-
-    print(f"Python path after: {sys.path}")
+    print(f"Python path: {sys.path}")
 
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Dunecardgame.settings')
+
+    # Add the project root, Dunecardgame, and gameapp to the Python path
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, project_root)
+    sys.path.insert(0, os.path.join(project_root, 'Dunecardgame'))
+    sys.path.insert(0, os.path.join(project_root, 'gameapp'))
+
+    print(f"Updated Python path: {sys.path}")
+
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

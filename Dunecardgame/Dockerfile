@@ -9,9 +9,12 @@ COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Set Python path
-ENV PYTHONPATH=/usr/src/app:/usr/src/app/Dunecardgame:$PYTHONPATH
+ENV PYTHONPATH=/usr/src/app:/usr/src/app/Dunecardgame:/usr/src/app/gameapp:$PYTHONPATH
 
 EXPOSE 8000
+
+# Print directory structure for debugging
+RUN ls -R /usr/src/app
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
