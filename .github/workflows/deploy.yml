@@ -1,58 +1,66 @@
-name: Deploy to Kubernetes
+name: CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build:
-    runs-on: self-hosted
-
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-
-    - name: Log in to Docker Hub
-      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-    - name: Build and push frontend Docker image
-      run: |
-        cd Dunecardgame/Dune-Front-End
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/dune-frontend:latest .
-        docker push ${{ secrets.DOCKER_USERNAME }}/dune-frontend:latest
-
-    - name: Build and push backend Docker image
-      run: |
-          cd Dunecardgame
-          echo "Building Docker image..."
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/dune-backend:${{ github.sha }} .
-          echo "Pushing Docker image in chunks..."
-          docker save ${{ secrets.DOCKER_USERNAME }}/dune-backend:${{ github.sha }} | gzip | split -b 20m - docker-image-chunk
-          for chunk in docker-image-chunk*; do
-            echo "Pushing chunk $chunk"
-            curl -X POST -H "Content-Type: application/octet-stream" --data-binary @$chunk \
-              -u "${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}" \
-              "https://registry-1.docker.io/v2/${{ secrets.DOCKER_USERNAME }}/dune-backend/blobs/uploads/?digest=sha256:$(sha256sum $chunk | cut -d' ' -f1)"
-          done
-          echo "Push completed. Listing images:"
-          docker images | grep dune-backend
-
-    - name: Set up kubectl
-      uses: azure/setup-kubectl@v1
+    - uses: actions/checkout@v2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
       with:
-        version: 'v1.21.0'
-  
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Debug information
+      run: |
+        echo "Current directory structure:"
+        ls -R
+        echo "Python path:"
+        python -c "import sys; print(sys.path)"
+        echo "Content of manage.py:"
+        cat manage.py
+        echo "Content of Dunecardgame/settings.py:"
+        cat Dunecardgame/settings.py
+    
+    - name: Build and push Docker image
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        docker build -t $DOCKER_USERNAME/dune-backend:latest .
+        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+        docker push $DOCKER_USERNAME/dune-backend:latest
+    
     - name: Deploy to Kubernetes
       env:
-        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
       run: |
-          echo "${KUBE_CONFIG_DATA}" | base64 --decode > kubeconfig
-          kubectl --kubeconfig=kubeconfig get nodes
-          kubectl --kubeconfig=kubeconfig apply -f Dunecardgame/k8s/
+        echo "$KUBE_CONFIG" | base64 -d > kubeconfig
+        kubectl --kubeconfig=kubeconfig set image deployment/dune-backend-deployment dune-backend=${{ secrets.DOCKER_USERNAME }}/dune-backend:latest
+        kubectl --kubeconfig=kubeconfig rollout status deployment/dune-backend-deployment
+        kubectl --kubeconfig=kubeconfig get pods
+        kubectl --kubeconfig=kubeconfig logs -l app=dune-backend
+
+    - name: Debug Kubernetes deployment
+      env:
+        KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+      run: |
+        echo "$KUBE_CONFIG" | base64 -d > kubeconfig
+        kubectl --kubeconfig=kubeconfig describe deployment dune-backend-deployment
+        kubectl --kubeconfig=kubeconfig get pods
+        kubectl --kubeconfig=kubeconfig logs -l app=dune-backend
 
 #push
 
