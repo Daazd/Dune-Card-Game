@@ -80,18 +80,15 @@ jobs:
         LINODE_CLI_TOKEN: ${{ secrets.LINODE_CLI_TOKEN }}
       run: |
         echo "Using Cluster ID: $CLUSTER_ID"
-        linode-cli lke kubeconfig-view $CLUSTER_ID > kubeconfig.raw
+        linode-cli lke kubeconfig-view $CLUSTER_ID --text > kubeconfig.b64
         if [ $? -ne 0 ]; then
           echo "Error: Failed to get kubeconfig"
           exit 1
         fi
         echo "Successfully retrieved kubeconfig"
-        # Debug raw content
-        echo "Raw kubeconfig content:"
-        cat kubeconfig.raw
-        # Decode the base64 content if necessary
-        base64 --decode kubeconfig.raw > ${GITHUB_WORKSPACE}/kubeconfig.yaml || mv kubeconfig.raw ${GITHUB_WORKSPACE}/kubeconfig.yaml
-        # Check the content of the kubeconfig file
+        # Decode the base64 content
+        base64 -d kubeconfig.b64 > ${GITHUB_WORKSPACE}/kubeconfig.yaml
+        # Check the content of the decoded kubeconfig file
         echo "First few lines of decoded kubeconfig:"
         head -n 10 ${GITHUB_WORKSPACE}/kubeconfig.yaml
         # Verify the file is valid YAML
@@ -124,6 +121,7 @@ jobs:
         export KUBECONFIG=${GITHUB_WORKSPACE}/kubeconfig.yaml
         kubectl get pods
         kubectl get services
+
 
 
 
