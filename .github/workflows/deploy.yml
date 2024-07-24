@@ -27,9 +27,15 @@ jobs:
 
     - name: Build and push backend Docker image
       run: |
-        cd Dunecardgame
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest .
-        docker push ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest
+          cd Dunecardgame
+          echo "Current directory contents:"
+          ls -la
+          echo "Building Docker image..."
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest .
+          echo "Inspecting built image..."
+          docker run --rm ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest ls -la /usr/src/app
+          echo "Pushing Docker image..."
+          docker push --verbose ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest
 
     - name: Set up kubectl
       uses: azure/setup-kubectl@v1
