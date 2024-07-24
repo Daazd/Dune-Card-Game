@@ -22,19 +22,31 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build and push Frontend Docker image
-      uses: docker/build-push-action@v2
-      with:
-        context: ./Dunecardgame/Dune-Front-End
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/dune-frontend:latest
+    - name: Build Frontend Docker image
+      run: |
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/dune-frontend:latest ./Dunecardgame/Dune-Front-End
 
-    - name: Build and push Backend Docker image
-      uses: docker/build-push-action@v2
-      with:
-        context: ./Dunecardgame
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest
+    - name: Push Frontend Docker image in chunks
+      run: |
+        docker save ${{ secrets.DOCKER_USERNAME }}/dune-frontend:latest | gzip | split -b 20m - frontend-image-chunk
+        for chunk in frontend-image-chunk*; do
+          curl -X POST -H "Content-Type: application/octet-stream" --data-binary @$chunk \
+            -u "${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}" \
+            "https://registry-1.docker.io/v2/${{ secrets.DOCKER_USERNAME }}/dune-frontend/blobs/uploads/?digest=sha256:$(sha256sum $chunk | cut -d' ' -f1)"
+        done
+
+    - name: Build Backend Docker image
+      run: |
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest ./Dunecardgame
+
+    - name: Push Backend Docker image in chunks
+      run: |
+        docker save ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest | gzip | split -b 20m - backend-image-chunk
+        for chunk in backend-image-chunk*; do
+          curl -X POST -H "Content-Type: application/octet-stream" --data-binary @$chunk \
+            -u "${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}" \
+            "https://registry-1.docker.io/v2/${{ secrets.DOCKER_USERNAME }}/dune-backend/blobs/uploads/?digest=sha256:$(sha256sum $chunk | cut -d' ' -f1)"
+        done
 
     - name: Install Linode CLI
       run: |
