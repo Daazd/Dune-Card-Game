@@ -8,7 +8,7 @@ COPY package*.json ./
 RUN npm install
 
 # Copy the rest of the application code to the working directory
-COPY . .
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Build the application for production
 RUN npm run build

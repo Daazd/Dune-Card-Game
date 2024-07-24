@@ -8,12 +8,12 @@ WORKDIR /usr/src/app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the project files
-COPY manage.py .
-COPY Dunecardgame ./Dunecardgame
+# Copy the rest of the application code to the working directory
+COPY . .
 
 # Expose the port the app runs on
 EXPOSE 8000
 
 # Command to run the application
 CMD ["sh", "-c", "ls -la /usr/src/app && python manage.py runserver 0.0.0.0:8000"]
+
