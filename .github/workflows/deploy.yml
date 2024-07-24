@@ -63,8 +63,10 @@ jobs:
       run: |
         mkdir -p ~/.config/linode-cli
         echo -e "[DEFAULT]\ntoken = $LINODE_CLI_TOKEN\nregion = us-west" > ~/.config/linode-cli/config
-    
+
     - name: Test Linode CLI
+      env:
+        LINODE_CLI_TOKEN: ${{ secrets.LINODE_CLI_TOKEN }}
       run: |
         linode-cli --version
         linode-cli regions list
@@ -74,6 +76,8 @@ jobs:
         echo "CLUSTER_ID=204261" >> $GITHUB_ENV
 
     - name: Get LKE kubeconfig
+      env:
+        LINODE_CLI_TOKEN: ${{ secrets.LINODE_CLI_TOKEN }}
       run: |
         echo "Using Cluster ID: $CLUSTER_ID"
         linode-cli lke kubeconfig-view $CLUSTER_ID --text > kubeconfig.yaml
@@ -94,22 +98,24 @@ jobs:
         version: 'v1.21.0'
 
     - name: Deploy to LKE
+      env:
+        KUBECONFIG: $(pwd)/kubeconfig.yaml
       run: |
         # Verify kubeconfig content
         echo "Kubeconfig content:"
         cat kubeconfig.yaml
-        
-        export KUBECONFIG=$(pwd)/kubeconfig.yaml
         
         kubectl config view
         
         kubectl apply -f ./Dunecardgame/k8s/
 
     - name: Verify deployment
+      env:
+        KUBECONFIG: $(pwd)/kubeconfig.yaml
       run: |
-        export KUBECONFIG=$(pwd)/kubeconfig.yaml
         kubectl get pods
         kubectl get services
+
 
 
 #push
