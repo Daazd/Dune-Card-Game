@@ -15,6 +15,8 @@ COPY Dunecardgame ./Dunecardgame
 # Copy the gameapp directory if it's needed
 COPY gameapp ./gameapp
 
+ENV PYTHONPATH=/usr/src/app
+
 EXPOSE 8000
 
 CMD ["sh", "-c", "ls -la /usr/src/app && python manage.py runserver 0.0.0.0:8000"]
