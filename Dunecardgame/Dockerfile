@@ -1,20 +1,21 @@
-# Use the official Python image as the base image
 FROM python:3.10
 
-# Set the working directory in the container
 WORKDIR /usr/src/app
 
-# Copy the requirements file and install dependencies
+# Copy requirements and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the project files
+# Copy the manage.py file
 COPY manage.py .
+
+# Copy the Dunecardgame directory
 COPY Dunecardgame ./Dunecardgame
 
-# Expose the port the app runs on
+# Copy the gameapp directory if it's needed
+COPY gameapp ./gameapp
+
 EXPOSE 8000
 
-# Command to run the application
 CMD ["sh", "-c", "ls -la /usr/src/app && python manage.py runserver 0.0.0.0:8000"]
 
