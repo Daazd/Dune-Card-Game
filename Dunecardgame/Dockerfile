@@ -27,5 +27,5 @@ RUN echo "Directory structure:" && \
     echo "PYTHONPATH:" && \
     echo $PYTHONPATH
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["python", "-v", "manage.py", "runserver", "0.0.0.0:8000"]
 
