@@ -8,58 +8,53 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v2
     
-    - name: Set up Python
-      uses: actions/setup-python@v2
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
       with:
-        python-version: '3.10'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Debug information
-      run: |
-        echo "Current directory structure:"
-        ls -R
-        echo "Python path:"
-        python -c "import sys; print(sys.path)"
-        echo "Content of manage.py:"
-        cat manage.py
-        echo "Content of Dunecardgame/settings.py:"
-        cat Dunecardgame/settings.py
-    
-    - name: Build and push Docker image
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      run: |
-        docker build -t $DOCKER_USERNAME/dune-backend:latest .
-        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-        docker push $DOCKER_USERNAME/dune-backend:latest
-    
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and push Frontend Docker image
+      uses: docker/build-push-action@v2
+      with:
+        context: ./Dune-Front-End
+        push: true
+        tags: ${{ secrets.DOCKER_USERNAME }}/dune-frontend:latest
+
+    - name: Build and push Backend Docker image
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        push: true
+        tags: ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v1
+      with:
+        version: 'v1.21.0'  # Use the version that matches your cluster
+
     - name: Deploy to Kubernetes
       env:
         KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
       run: |
         echo "$KUBE_CONFIG" | base64 -d > kubeconfig
-        kubectl --kubeconfig=kubeconfig set image deployment/dune-backend-deployment dune-backend=${{ secrets.DOCKER_USERNAME }}/dune-backend:latest
-        kubectl --kubeconfig=kubeconfig rollout status deployment/dune-backend-deployment
-        kubectl --kubeconfig=kubeconfig get pods
-        kubectl --kubeconfig=kubeconfig logs -l app=dune-backend
+        kubectl --kubeconfig=kubeconfig apply -f k8s/
 
     - name: Debug Kubernetes deployment
       env:
         KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
       run: |
         echo "$KUBE_CONFIG" | base64 -d > kubeconfig
-        kubectl --kubeconfig=kubeconfig describe deployment dune-backend-deployment
         kubectl --kubeconfig=kubeconfig get pods
+        kubectl --kubeconfig=kubeconfig logs -l app=dune-frontend
         kubectl --kubeconfig=kubeconfig logs -l app=dune-backend
 
 #push
