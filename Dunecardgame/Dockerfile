@@ -19,5 +19,13 @@ ENV PYTHONPATH=/usr/src/app
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "ls -la /usr/src/app && python manage.py runserver 0.0.0.0:8000"]
+# Print directory structure and file contents for debugging
+RUN echo "Directory structure:" && \
+    ls -R /usr/src/app && \
+    echo "Contents of manage.py:" && \
+    cat /usr/src/app/manage.py && \
+    echo "Contents of settings.py:" && \
+    cat /usr/src/app/Dunecardgame/settings.py
+
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
