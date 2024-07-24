@@ -80,7 +80,7 @@ jobs:
         LINODE_CLI_TOKEN: ${{ secrets.LINODE_CLI_TOKEN }}
       run: |
         echo "Using Cluster ID: $CLUSTER_ID"
-        linode-cli lke kubeconfig-view $CLUSTER_ID --text > kubeconfig.yaml
+        linode-cli lke kubeconfig-view $CLUSTER_ID --text > ${GITHUB_WORKSPACE}/kubeconfig.yaml
         if [ $? -ne 0 ]; then
           echo "Error: Failed to get kubeconfig"
           exit 1
@@ -88,9 +88,9 @@ jobs:
         echo "Successfully retrieved kubeconfig"
         # Check the content of the kubeconfig file
         echo "First few lines of kubeconfig:"
-        head -n 10 kubeconfig.yaml
+        head -n 10 ${GITHUB_WORKSPACE}/kubeconfig.yaml
         # Verify the file is valid YAML
-        python -c "import yaml; yaml.safe_load(open('kubeconfig.yaml'))"
+        python -c "import yaml; yaml.safe_load(open('${GITHUB_WORKSPACE}/kubeconfig.yaml'))"
 
     - name: Install kubectl
       uses: azure/setup-kubectl@v1
@@ -103,7 +103,8 @@ jobs:
       run: |
         # Verify kubeconfig content
         echo "Kubeconfig content:"
-        cat kubeconfig.yaml
+        cat ${GITHUB_WORKSPACE}/kubeconfig.yaml
+        export KUBECONFIG=${GITHUB_WORKSPACE}/kubeconfig.yaml
         
         kubectl config view
         
@@ -113,6 +114,7 @@ jobs:
       env:
         KUBECONFIG: $(pwd)/kubeconfig.yaml
       run: |
+        export KUBECONFIG=${GITHUB_WORKSPACE}/kubeconfig.yaml
         kubectl get pods
         kubectl get services
 
