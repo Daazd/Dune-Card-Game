@@ -25,16 +25,16 @@ jobs:
     - name: Build and push Frontend Docker image
       uses: docker/build-push-action@v2
       with:
-        context: ./Dune-Front-End
-        file: ./Dune-Front-End/Dockerfile
+        context: Dunecardgame/Dune-Front-End
+        file: Dunecardgame/Dune-Front-End/Dockerfile
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/dune-frontend:latest
 
     - name: Build and push Backend Docker image
       uses: docker/build-push-action@v2
       with:
-        context: .
-        file: ./Dockerfile
+        context: Dunecardgame
+        file: Dunecardgame/Dockerfile
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest
 
