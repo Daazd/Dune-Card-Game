@@ -62,8 +62,7 @@ jobs:
         LINODE_CLI_TOKEN: ${{ secrets.LINODE_CLI_TOKEN }}
       run: |
         mkdir -p ~/.config/linode-cli
-        echo -e "[DEFAULT]\ntoken = $LINODE_CLI_TOKEN\nregion = us-east" > ~/.config/linode-cli/config
-        linode-cli configure --token $LINODE_CLI_TOKEN
+        echo -e "[DEFAULT]\ntoken = $LINODE_CLI_TOKEN\nregion = us-west" > ~/.config/linode-cli/config
     
     - name: Test Linode CLI
       run: |
