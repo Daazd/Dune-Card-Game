@@ -9,23 +9,9 @@ COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Set Python path
-ENV PYTHONPATH=/usr/src/app
+ENV PYTHONPATH=/usr/src/app:/usr/src/app/Dunecardgame:$PYTHONPATH
 
 EXPOSE 8000
 
-# Print directory structure and file contents for debugging
-RUN echo "Directory structure:" && \
-    ls -R /usr/src/app && \
-    echo "Python path:" && \
-    python -c "import sys; print(sys.path)" && \
-    echo "Content of settings.py:" && \
-    cat /usr/src/app/Dunecardgame/settings.py && \
-    echo "Content of gameapp directory:" && \
-    ls -la /usr/src/app/gameapp && \
-    echo "Content of gameapp/apps.py:" && \
-    cat /usr/src/app/gameapp/apps.py && \
-    echo "PYTHONPATH:" && \
-    echo $PYTHONPATH
-
-CMD ["python", "-v", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 

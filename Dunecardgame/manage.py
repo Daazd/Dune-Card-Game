@@ -3,18 +3,18 @@ import os
 import sys
 
 def main():
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Dunecardgame.settings')
-    
     print(f"Current working directory: {os.getcwd()}")
     print(f"Contents of current directory: {os.listdir('.')}")
-    print(f"Python path before modification: {sys.path}")
-    
-    # Add the project root to the Python path
-    project_root = os.path.dirname(os.path.abspath(__file__))
-    sys.path.insert(0, project_root)
-    
-    print(f"Python path after modification: {sys.path}")
-    
+    print(f"Python path before: {sys.path}")
+
+    # Add the Dunecardgame directory to the Python path
+    dunecardgame_path = os.path.abspath(os.path.dirname(__file__))
+    sys.path.insert(0, dunecardgame_path)
+    sys.path.insert(0, os.path.join(dunecardgame_path, 'Dunecardgame'))
+
+    print(f"Python path after: {sys.path}")
+
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Dunecardgame.settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
@@ -23,14 +23,6 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
-    
-    print("Trying to import gameapp...")
-    try:
-        import gameapp
-        print("Successfully imported gameapp")
-    except ImportError as e:
-        print(f"Failed to import gameapp: {e}")
-    
     execute_from_command_line(sys.argv)
 
 if __name__ == '__main__':
