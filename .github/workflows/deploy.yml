@@ -63,6 +63,11 @@ jobs:
       run: |
         linode-cli --version
         linode-cli regions list
+
+    - name: List LKE clusters
+      run: |
+        echo "Available LKE clusters:"
+        linode-cli lke clusters-list --json | jq -r '.[] | "ID: \(.id), Label: \(.label), API Endpoint: \(.api_endpoints[0])"'
   
     - name: Extract LKE Cluster ID
       run: |
@@ -70,7 +75,18 @@ jobs:
   
     - name: Get LKE kubeconfig
       run: |
-        linode-cli lke kubeconfig-view ${{ env.LKE_CLUSTER_ID }} --text > kubeconfig.yaml
+        CLUSTER_ID=$(linode-cli lke clusters-list --json | jq -r '.[] | select(.api_endpoints[0] | contains("d9b6af3c-a23c-4f11-9be1-ecb15f8cf6da")) | .id')
+        echo "Using Cluster ID: $CLUSTER_ID"
+        if [ -z "$CLUSTER_ID" ]; then
+          echo "Error: LKE cluster not found"
+          exit 1
+        fi
+        linode-cli lke kubeconfig-view $CLUSTER_ID --text > kubeconfig.yaml
+        if [ $? -ne 0 ]; then
+          echo "Error: Failed to get kubeconfig"
+          exit 1
+        fi
+        echo "Successfully retrieved kubeconfig"
         
     - name: Install kubectl
       uses: azure/setup-kubectl@v1
