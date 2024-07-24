@@ -26,27 +26,22 @@ jobs:
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/dune-frontend:latest ./Dunecardgame/Dune-Front-End
 
-    - name: Push Frontend Docker image in chunks
+    - name: Push Frontend Docker image
       run: |
-        docker save ${{ secrets.DOCKER_USERNAME }}/dune-frontend:latest | gzip | split -b 20m - frontend-image-chunk
-        for chunk in frontend-image-chunk*; do
-          curl -X POST -H "Content-Type: application/octet-stream" --data-binary @$chunk \
-            -u "${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}" \
-            "https://registry-1.docker.io/v2/${{ secrets.DOCKER_USERNAME }}/dune-frontend/blobs/uploads/?digest=sha256:$(sha256sum $chunk | cut -d' ' -f1)"
-        done
+        docker push ${{ secrets.DOCKER_USERNAME }}/dune-frontend:latest
 
     - name: Build Backend Docker image
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest ./Dunecardgame
 
-    - name: Push Backend Docker image in chunks
+    - name: Push Backend Docker image
       run: |
-        docker save ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest | gzip | split -b 20m - backend-image-chunk
-        for chunk in backend-image-chunk*; do
-          curl -X POST -H "Content-Type: application/octet-stream" --data-binary @$chunk \
-            -u "${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}" \
-            "https://registry-1.docker.io/v2/${{ secrets.DOCKER_USERNAME }}/dune-backend/blobs/uploads/?digest=sha256:$(sha256sum $chunk | cut -d' ' -f1)"
-        done
+        docker push ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest
+
+    - name: Install Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
 
     - name: Install Linode CLI
       run: |
@@ -56,19 +51,16 @@ jobs:
       env:
         LINODE_CLI_TOKEN: ${{ secrets.LINODE_CLI_TOKEN }}
       run: |
-        echo "LINODE_CLI_TOKEN=$LINODE_CLI_TOKEN" >> $GITHUB_ENV
-        echo "Linode CLI Token is set: ${{ secrets.LINODE_CLI_TOKEN != '' }}"
+        linode-cli configure --token $LINODE_CLI_TOKEN
     
     - name: Test Linode CLI
       run: |
         linode-cli --version
         linode-cli regions list
 
-    - name: Set Cluster ID
-      run: |
-        echo "CLUSTER_ID=204261" >> $GITHUB_ENV
-
     - name: Get LKE kubeconfig
+      env:
+        CLUSTER_ID: ${{ secrets.CLUSTER_ID }}
       run: |
         echo "Using Cluster ID: $CLUSTER_ID"
         linode-cli lke kubeconfig-view $CLUSTER_ID --text > kubeconfig.yaml
@@ -82,11 +74,6 @@ jobs:
         head -n 10 kubeconfig.yaml
         # Verify the file is valid YAML
         python -c "import yaml; yaml.safe_load(open('kubeconfig.yaml'))"
-
-    - name: Install Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
 
     - name: Install kubectl
       uses: azure/setup-kubectl@v1
@@ -110,6 +97,7 @@ jobs:
         export KUBECONFIG=$(pwd)/kubeconfig.yaml
         kubectl get pods
         kubectl get services
+
 
 #push
 
