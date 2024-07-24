@@ -27,17 +27,19 @@ jobs:
 
     - name: Build and push backend Docker image
       run: |
-        cd Dunecardgame
-        echo "Current directory contents:"
-        ls -la
-        echo "Building Docker image..."
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/dune-backend:${{ github.sha }} .
-        echo "Inspecting built image..."
-        docker run --rm ${{ secrets.DOCKER_USERNAME }}/dune-backend:${{ github.sha }} ls -la /usr/src/app
-        echo "Pushing Docker image..."
-        docker push ${{ secrets.DOCKER_USERNAME }}/dune-backend:${{ github.sha }}
-        echo "Push completed. Listing images:"
-        docker images | grep dune-backend
+          cd Dunecardgame
+          echo "Building Docker image..."
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/dune-backend:${{ github.sha }} .
+          echo "Pushing Docker image in chunks..."
+          docker save ${{ secrets.DOCKER_USERNAME }}/dune-backend:${{ github.sha }} | gzip | split -b 20m - docker-image-chunk
+          for chunk in docker-image-chunk*; do
+            echo "Pushing chunk $chunk"
+            curl -X POST -H "Content-Type: application/octet-stream" --data-binary @$chunk \
+              -u "${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}" \
+              "https://registry-1.docker.io/v2/${{ secrets.DOCKER_USERNAME }}/dune-backend/blobs/uploads/?digest=sha256:$(sha256sum $chunk | cut -d' ' -f1)"
+          done
+          echo "Push completed. Listing images:"
+          docker images | grep dune-backend
 
     - name: Set up kubectl
       uses: azure/setup-kubectl@v1
