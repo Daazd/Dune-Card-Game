@@ -51,16 +51,20 @@ jobs:
     - name: Install Linode CLI
       run: |
         pip install linode-cli
-
+  
     - name: Configure Linode CLI
       env:
         LINODE_CLI_TOKEN: ${{ secrets.LINODE_CLI_TOKEN }}
       run: |
         echo "LINODE_CLI_TOKEN=$LINODE_CLI_TOKEN" >> $GITHUB_ENV
-
+  
+    - name: Extract LKE Cluster ID
+      run: |
+        echo "LKE_CLUSTER_ID=$(echo ${{ secrets.LKE_CLUSTER_ID }} | tr -dc '0-9')" >> $GITHUB_ENV
+  
     - name: Get LKE kubeconfig
       run: |
-        linode-cli lke kubeconfig-view ${{ secrets.LKE_CLUSTER_ID }} --text > kubeconfig.yaml
+        linode-cli lke kubeconfig-view ${{ env.LKE_CLUSTER_ID }} --text > kubeconfig.yaml
         
     - name: Install kubectl
       uses: azure/setup-kubectl@v1
