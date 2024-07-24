@@ -15,8 +15,18 @@ from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+print(f"BASE_DIR: {BASE_DIR}")
+print(f"Current working directory: {os.getcwd()}")
+print(f"Contents of current directory: {os.listdir('.')}")
+print(f"Contents of parent directory: {os.listdir('..')}")
+print(f"Python path: {sys.path}")
+
+
 sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR / 'gameapp'))
+
+print(f"Updated Python path: {sys.path}")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 

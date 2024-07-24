@@ -21,7 +21,9 @@ RUN echo "Directory structure:" && \
     echo "Content of settings.py:" && \
     cat /usr/src/app/Dunecardgame/settings.py && \
     echo "Content of gameapp directory:" && \
-    ls -la /usr/src/app/gameapp
+    ls -la /usr/src/app/gameapp && \
+    echo "PYTHONPATH:" && \
+    echo $PYTHONPATH
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
