@@ -80,7 +80,7 @@ jobs:
         LINODE_CLI_TOKEN: ${{ secrets.LINODE_CLI_TOKEN }}
       run: |
         echo "Using Cluster ID: $CLUSTER_ID"
-        linode-cli lke kubeconfig-view $CLUSTER_ID --text > ${GITHUB_WORKSPACE}/kubeconfig.yaml
+        linode-cli lke kubeconfig-view $CLUSTER_ID > ${GITHUB_WORKSPACE}/kubeconfig.yaml
         if [ $? -ne 0 ]; then
           echo "Error: Failed to get kubeconfig"
           exit 1
@@ -119,6 +119,7 @@ jobs:
         export KUBECONFIG=${GITHUB_WORKSPACE}/kubeconfig.yaml
         kubectl get pods
         kubectl get services
+
 
 
 
