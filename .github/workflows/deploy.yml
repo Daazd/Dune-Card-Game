@@ -77,10 +77,11 @@ jobs:
           exit 1
         fi
         echo "Successfully retrieved kubeconfig"
-        # Redact sensitive information before displaying
-        sed -i 's/certificate-authority-data:.*/certificate-authority-data: REDACTED/' kubeconfig.yaml
-        sed -i 's/token:.*/token: REDACTED/' kubeconfig.yaml
-        cat kubeconfig.yaml
+        # Check the content of the kubeconfig file
+        echo "First few lines of kubeconfig:"
+        head -n 10 kubeconfig.yaml
+        # Verify the file is valid YAML
+        python -c "import yaml; yaml.safe_load(open('kubeconfig.yaml'))"
 
     - name: Install kubectl
       uses: azure/setup-kubectl@v1
@@ -89,15 +90,19 @@ jobs:
 
     - name: Deploy to LKE
       run: |
-        # Use the kubeconfig we just retrieved
-        export KUBECONFIG=./kubeconfig.yaml
+        # Verify kubeconfig content
+        echo "Kubeconfig content:"
+        cat kubeconfig.yaml
         
-        # Apply your Kubernetes configurations
+        export KUBECONFIG=$(pwd)/kubeconfig.yaml
+        
+        kubectl config view
+        
         kubectl apply -f ./Dunecardgame/k8s/
 
     - name: Verify deployment
       run: |
-        export KUBECONFIG=./kubeconfig.yaml
+        export KUBECONFIG=$(pwd)/kubeconfig.yaml
         kubectl get pods
         kubectl get services
 
