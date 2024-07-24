@@ -57,6 +57,12 @@ jobs:
         LINODE_CLI_TOKEN: ${{ secrets.LINODE_CLI_TOKEN }}
       run: |
         echo "LINODE_CLI_TOKEN=$LINODE_CLI_TOKEN" >> $GITHUB_ENV
+        echo "Linode CLI Token is set: ${{ secrets.LINODE_CLI_TOKEN != '' }}"
+    
+    - name: Test Linode CLI
+      run: |
+        linode-cli --version
+        linode-cli regions list
   
     - name: Extract LKE Cluster ID
       run: |
