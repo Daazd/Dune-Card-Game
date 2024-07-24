@@ -58,7 +58,10 @@ jobs:
         KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
       run: |
         echo "$KUBE_CONFIG" | base64 -d > kubeconfig
-        kubectl --kubeconfig=kubeconfig apply -f Dunecardgame/k8s/
+        echo "Contents of Dunecardgame/k8s/:"
+        ls -la Dunecardgame/k8s/
+        echo "Applying Kubernetes configurations:"
+        kubectl --kubeconfig=kubeconfig apply -f Dunecardgame/k8s/ --v=5
 
     - name: Debug Kubernetes deployment
       env:
