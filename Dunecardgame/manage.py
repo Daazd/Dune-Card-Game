@@ -2,21 +2,19 @@
 import os
 import sys
 
-
 def main():
     print(f"Current working directory: {os.getcwd()}")
     print(f"Contents of current directory: {os.listdir('.')}")
-    print(f"Python path: {sys.path}")
+    print(f"Python path before: {sys.path}")
 
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Dunecardgame.settings')
 
-    # Add the project root, Dunecardgame, and gameapp to the Python path
+    # Add the project root and gameapp to the Python path
     project_root = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, project_root)
-    sys.path.insert(0, os.path.join(project_root, 'Dunecardgame'))
     sys.path.insert(0, os.path.join(project_root, 'gameapp'))
 
-    print(f"Updated Python path: {sys.path}")
+    print(f"Python path after: {sys.path}")
 
     try:
         from django.core.management import execute_from_command_line

@@ -13,8 +13,8 @@ ENV PYTHONPATH=/usr/src/app:/usr/src/app/Dunecardgame:/usr/src/app/gameapp:$PYTH
 
 EXPOSE 8000
 
-# Print directory structure for debugging
-RUN ls -R /usr/src/app
+# Print directory structure and Python path for debugging
+RUN ls -R /usr/src/app && python -c "import sys; print(sys.path)"
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
