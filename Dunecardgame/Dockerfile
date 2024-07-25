@@ -19,5 +19,9 @@ EXPOSE 8000
 # Print directory structure and Python path for debugging
 RUN ls -R /usr/src/app && python -c "import sys; print(sys.path)"
 
+# Ensure gameapp is copied
+RUN ls -R /usr/src/app/gameapp
+
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
 
