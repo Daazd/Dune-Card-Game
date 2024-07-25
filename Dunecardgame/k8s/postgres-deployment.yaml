@@ -1,4 +1,3 @@
----
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -31,9 +30,9 @@ spec:
             - containerPort: 5432
           env:
             - name: POSTGRES_DB
-              value: dunedb
+              value: dune_card_game
             - name: POSTGRES_USER
-              value: duneuser
+              value: taylor
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -42,6 +41,7 @@ spec:
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
+              subPath: postgres
       volumes:
         - name: postgres-storage
           persistentVolumeClaim:
