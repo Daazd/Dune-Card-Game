@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  DB_NAME: "dune_card_game"
+  DB_USER: "taylor"
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-secret
+type: Opaque
+stringData:
+  DB_PASSWORD: "Emerica23#"
