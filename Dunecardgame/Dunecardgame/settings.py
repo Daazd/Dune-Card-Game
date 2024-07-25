@@ -164,7 +164,7 @@ CORS_ALLOWED_ORIGINS = [
     
 ]
 
-CORS_ALLOW_ALL_ORIGINS = False  # For development only, be more restrictive in production
+CORS_ALLOW_ALL_ORIGINS = True  # For development only, be more restrictive in production
 CORS_ALLOW_CREDENTIALS = True
 
 # Static files (CSS, JavaScript, Images)
