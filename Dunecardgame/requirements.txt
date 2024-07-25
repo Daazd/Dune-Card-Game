@@ -1,8 +1,8 @@
-Django>=3.2,<4.0
+django>=3.2,<4.0
 djangorestframework>=3.12.4
 gunicorn>=20.1.0
 psycopg2>=2.8.6
 whitenoise>=5.2.0
 django-cors-headers>=3.7.0
-corsheaders
+django-cors-headers
 djangorestframework-simplejwt
