@@ -29,7 +29,7 @@ export const getDecks = async () => {
 
 export const getCardsByDeck = async (deckName) => {
   try {
-    const response = await axios.get(`http://localhost:8000/api/decks/${deckName}/cards/`);
+    const response = await axiosInstance.get(`decks/${deckName}/cards/`);
     return response.data;
   } catch (error) {
     console.error('Error fetching cards by deck:', error);

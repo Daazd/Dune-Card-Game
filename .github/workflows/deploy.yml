@@ -21,6 +21,11 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Debug Docker info
+      run: |
+        echo "Logged in as: $(docker info | grep Username)"
+        docker version
 
     - name: Build Frontend Docker image
       run: |
@@ -38,16 +43,10 @@ jobs:
     - name: Build Backend Docker image
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest ./Dunecardgame
-        docker run --rm ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest ls -R /usr/src/app
 
-    - name: Push Backend Docker image in chunks
+    - name: Push Backend Docker image
       run: |
-        docker save ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest | gzip | split -b 20m - backend-image-chunk
-        for chunk in backend-image-chunk*; do
-          curl -X POST -H "Content-Type: application/octet-stream" --data-binary @$chunk \
-            -u "${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }}" \
-            "https://registry-1.docker.io/v2/${{ secrets.DOCKER_USERNAME }}/dune-backend/blobs/uploads/?digest=sha256:$(sha256sum $chunk | cut -d' ' -f1)"
-        done
+        docker push ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest
 
     - name: Install Python
       uses: actions/setup-python@v2
