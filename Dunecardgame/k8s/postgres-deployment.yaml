@@ -33,6 +33,10 @@ spec:
               value: dune_card_game
             - name: POSTGRES_USER
               value: taylor
+            - name: POSTGRES_HOST
+              value: postgres-service
+            - name: POSTGRES_PORT
+              value: "5432"
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
