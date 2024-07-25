@@ -1,28 +1,16 @@
-FROM python:3.10
+FROM python:3.10-slim
 
 WORKDIR /usr/src/app
 
-# Copy only necessary files
-COPY manage.py .
-COPY requirements.txt .
-COPY Dunecardgame ./Dunecardgame
-COPY gameapp ./gameapp
-
-# Install dependencies
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Set Python path
-ENV PYTHONPATH=/usr/src/app:/usr/src/app/gameapp:$PYTHONPATH
+COPY . .
 
-EXPOSE 8000
-
-# Print directory structure and Python path for debugging
-RUN ls -R /usr/src/app && python -c "import sys; print(sys.path)"
-
-# Ensure gameapp is copied
-RUN ls -R /usr/src/app/gameapp
+ENV PYTHONPATH="${PYTHONPATH}:/usr/src/app/gameapp"
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
 
 
 
