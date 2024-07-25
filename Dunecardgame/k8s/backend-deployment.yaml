@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dune-backend-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dune-backend
+  template:
+    metadata:
+      labels:
+        app: dune-backend
+    spec:
+      containers:
+      - name: dune-backend
+        image: dazdd/dune-backend:latest
+        ports:
+        - containerPort: 8000
