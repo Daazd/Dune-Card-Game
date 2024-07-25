@@ -19,9 +19,9 @@ spec:
         - containerPort: 80
         env:
         - name: REACT_APP_API_URL
-          value: "http://10.96.133.8:30429/api"
+          value: "http://66.175.217.154:30429/api"
         - name: REACT_APP_MEDIA_URL
-          value: "http://10.96.132.2:31324/media"
+          value: "http://66.175.217.154:31324/media"
 ---
 apiVersion: v1
 kind: Service

@@ -7,6 +7,8 @@ const axiosInstance = axios.create({
   timeout: 1000,
 });
 
+console.log('API_BASE_URL:', API_BASE_URL);
+
 export const getCards = async () => {
   console.log('Fetching cards from:', API_BASE_URL + '/cards/');
   try {
