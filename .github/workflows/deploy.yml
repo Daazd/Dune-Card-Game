@@ -38,6 +38,7 @@ jobs:
     - name: Build Backend Docker image
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest ./Dunecardgame
+        docker run --rm ${{ secrets.DOCKER_USERNAME }}/dune-backend:latest ls -R /usr/src/app
 
     - name: Push Backend Docker image in chunks
       run: |
