@@ -3,7 +3,7 @@ FROM python:3.10-slim
 WORKDIR /usr/src/app
 
 # Install PostgreSQL development package
-RUN apt-get update && apt-get install -y libpq-dev gcc
+RUN apt-get update && apt-get install -y libpq-dev gcc postgresql-client
 
 # Update pip
 RUN pip install --upgrade pip
