@@ -12,6 +12,7 @@ import AuthPage from './Components/AuthPage';
 import { getCards, getDecks, getCardsByDeck } from './api';
 import './App.css';
 import axios from 'axios';
+import axiosInstance from './api';
 
 const App = () => {
   const [cards, setCards] = useState([]);
@@ -47,7 +48,7 @@ const App = () => {
     const fetchCardsByDeck = async () => {
       if (selectedDeck) {
         try {
-          const response = await axios.get(`http://localhost:8000/api/decks/${selectedDeck}/cards/`);
+          const response = await axios.get(`${process.env.REACT_APP_API_URL}/decks/${selectedDeck}/cards/`);
           setCards(response.data);
         } catch (error) {
           console.error('Error fetching cards by deck:', error);

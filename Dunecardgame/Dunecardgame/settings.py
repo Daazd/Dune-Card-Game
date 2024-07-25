@@ -41,6 +41,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'dune-backend-nodeport', 'dune-backen
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'gameapp', 'media')
+REACT_APP_MEDIA_URL='/media'
 
 # Application definition
 

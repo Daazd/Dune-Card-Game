@@ -19,7 +19,9 @@ spec:
         - containerPort: 80
         env:
         - name: REACT_APP_API_URL
-          value: "http://dune-backend-service:8000/api"
+          value: "/api"
+        - name: REACT_APP_MEDIA_URL
+          value: "/media"
 ---
 apiVersion: v1
 kind: Service
