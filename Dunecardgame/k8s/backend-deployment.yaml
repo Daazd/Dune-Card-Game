@@ -20,6 +20,8 @@ spec:
         env:
         - name: DATABASE_URL
           value: "postgres://taylor:Emerica23#@postgres-service:5432/dune_card_game"
+        - name: PYTHONPATH
+          value: "/usr/src/app:/usr/src/app/gameapp"
 ---
 apiVersion: v1
 kind: Service
