@@ -90,17 +90,15 @@ jobs:
         echo "Content of retrieved kubeconfig:"
         cat kubeconfig.tmp
         
-        # Check if the content is already in YAML format
-        if grep -q "apiVersion:" kubeconfig.tmp; then
-          echo "Content is already in YAML format"
-          mv kubeconfig.tmp ${GITHUB_WORKSPACE}/kubeconfig.yaml
-        else
-          echo "Content appears to be base64 encoded, attempting to decode"
-          # Remove any non-base64 characters and decode
-          cat kubeconfig.tmp | tr -cd '[:alnum:]+/=' | base64 -d > ${GITHUB_WORKSPACE}/kubeconfig.yaml
-        fi
+        # Extract the base64 content, ignoring the first line
+        BASE64_CONTENT=$(tail -n +2 kubeconfig.tmp | tr -d '\n')
+        echo "Extracted base64 content:"
+        echo "$BASE64_CONTENT"
         
-        echo "Processed kubeconfig content:"
+        # Decode the base64 content
+        echo "$BASE64_CONTENT" | base64 -d > ${GITHUB_WORKSPACE}/kubeconfig.yaml
+        
+        echo "Decoded kubeconfig content:"
         cat ${GITHUB_WORKSPACE}/kubeconfig.yaml
       
     - name: Validate YAML
