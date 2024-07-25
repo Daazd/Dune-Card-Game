@@ -1,21 +1,30 @@
 version: '3.8'
 
 services:
-  frontend:
-    build:
-      context: ./frontend
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: dune_card_game
+      POSTGRES_USER: taylor
+      POSTGRES_PASSWORD: Emerica23#
     ports:
-      - "3000:80"
-  
-  backend:
-    build:
-      context: ./backend
+      - "5432:5432"
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/usr/src/app
     ports:
       - "8000:8000"
     depends_on:
-      - frontend
+      - db
     environment:
-      - DJANGO_ENV=production
-      - DATABASE_URL=postgres://user:password@db:5432/dbname
-    volumes:
-      - ./backend:/usr/src/app
+      - DATABASE_URL=postgres://taylor:Emerica23#@db:5432/dune_card_game
+
+volumes:
+  postgres_data:
+
+
