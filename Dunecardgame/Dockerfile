@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-ENV PYTHONPATH="${PYTHONPATH}:/usr/src/app/gameapp"
+ENV PYTHONPATH="${PYTHONPATH}:/usr/src/app:/usr/src/app/gameapp"
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
