@@ -23,10 +23,7 @@ spec:
         - name: DB_USER
           value: "taylor"
         - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secrets
-              key: postgres-password
+          value: "Emerica23#"
         - name: DB_HOST
           value: "postgres-service"
         - name: DB_PORT
