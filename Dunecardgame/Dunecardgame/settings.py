@@ -158,6 +158,9 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5432',
 ]
 
+CORS_ALLOW_ALL_ORIGINS = True  # For development only, be more restrictive in production
+CORS_ALLOW_CREDENTIALS = True
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
