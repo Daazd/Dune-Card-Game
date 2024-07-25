@@ -75,23 +75,23 @@ jobs:
       run: |
         echo "CLUSTER_ID=204261" >> $GITHUB_ENV
 
-        - name: Get and process LKE kubeconfig
-        env:
-          LINODE_CLI_TOKEN: ${{ secrets.LINODE_CLI_TOKEN }}
-        run: |
-          echo "Using Cluster ID: $CLUSTER_ID"
-          linode-cli lke kubeconfig-view $CLUSTER_ID > kubeconfig.b64
-          if [ $? -ne 0 ]; then
-            echo "Error: Failed to get kubeconfig"
-            exit 1
-          fi
-          echo "Successfully retrieved kubeconfig"
-          
-          echo "Decoding kubeconfig"
-          base64 -d kubeconfig.b64 > ${GITHUB_WORKSPACE}/kubeconfig.yaml
-          
-          echo "First few lines of decoded kubeconfig:"
-          head -n 10 ${GITHUB_WORKSPACE}/kubeconfig.yaml
+    - name: Get and process LKE kubeconfig
+      env:
+        LINODE_CLI_TOKEN: ${{ secrets.LINODE_CLI_TOKEN }}
+      run: |
+        echo "Using Cluster ID: $CLUSTER_ID"
+        linode-cli lke kubeconfig-view $CLUSTER_ID > kubeconfig.b64
+        if [ $? -ne 0 ]; then
+          echo "Error: Failed to get kubeconfig"
+          exit 1
+        fi
+        echo "Successfully retrieved kubeconfig"
+        
+        echo "Decoding kubeconfig"
+        base64 -d kubeconfig.b64 > ${GITHUB_WORKSPACE}/kubeconfig.yaml
+        
+        echo "First few lines of decoded kubeconfig:"
+        head -n 10 ${GITHUB_WORKSPACE}/kubeconfig.yaml
       
     - name: Validate YAML
       run: |
