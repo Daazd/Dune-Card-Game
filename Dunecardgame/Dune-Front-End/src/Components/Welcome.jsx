@@ -18,7 +18,7 @@ const Welcome = ({ setAuthToken, setIsAdmin, authToken, isAdmin }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://localhost:8000/api/login/', {
+      const response = await axios.post(`${process.env.REACT_APP_MEDIA_URL}/api/login/`, {
         username,
         password,
       });
@@ -37,7 +37,7 @@ const Welcome = ({ setAuthToken, setIsAdmin, authToken, isAdmin }) => {
 
   const handleRegister = async () => {
     try {
-      await axios.post('http://localhost:8000/api/register/', {
+      await axios.post(`${process.env.REACT_APP_MEDIA_URL}/api/register/`, {
         username,
         password,
         email,
@@ -50,7 +50,7 @@ const Welcome = ({ setAuthToken, setIsAdmin, authToken, isAdmin }) => {
   };
 
   const handleAdminClick = () => {
-    window.location.href = 'http://localhost:8000/admin/';
+    window.location.href = `${process.env.REACT_APP_MEDIA_URL}/admin/`;
   };
 
   return (

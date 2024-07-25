@@ -11,7 +11,7 @@ const Login = ({ setAuthToken, setIsAdmin }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://localhost:8000/api/login/', {
+      const response = await axios.post(`${process.env.REACT_APP_MEDIA_URL}/api/login/`, {
         username,
         password,
       });

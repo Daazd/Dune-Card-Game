@@ -20,7 +20,7 @@ const FlippableCard = ({ card }) => {
           <CardMedia
             component="img"
             height="100%"
-            image={`http://localhost:8000/media/dune_card_images/${card.image_file}`}
+            image={`${process.env.REACT_APP_MEDIA_URL}/media/dune_card_images/${card.image_file}`}
             alt={card.name}
             style={{ objectFit: 'cover', width: '100%', height: '100%' }}
           />

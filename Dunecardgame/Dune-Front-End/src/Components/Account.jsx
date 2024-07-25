@@ -14,7 +14,7 @@ const Account = ({ authToken }) => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/user/', {
+        const response = await axios.get(`${process.env.REACT_APP_MEDIA_URL}/api/user/`, {
           headers: {
             Authorization: `Token ${authToken}`,
           },
@@ -32,7 +32,7 @@ const Account = ({ authToken }) => {
 
   const handleUpdate = async () => {
     try {
-      const response = await axios.put('http://localhost:8000/api/user/', {
+      const response = await axios.put(`${process.env.REACT_APP_MEDIA_URL}/api/user/`, {
         username: newUsername,
         email: newEmail,
         password: newPassword,
