@@ -12,7 +12,7 @@ COPY gameapp ./gameapp
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Set Python path
-ENV PYTHONPATH=/usr/src/app:$PYTHONPATH
+ENV PYTHONPATH=/usr/src/app:/usr/src/app/gameapp:$PYTHONPATH
 
 EXPOSE 8000
 
