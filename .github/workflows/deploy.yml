@@ -80,17 +80,25 @@ jobs:
         LINODE_CLI_TOKEN: ${{ secrets.LINODE_CLI_TOKEN }}
       run: |
         echo "Using Cluster ID: $CLUSTER_ID"
-        linode-cli lke kubeconfig-view $CLUSTER_ID > kubeconfig.b64
+        linode-cli lke kubeconfig-view $CLUSTER_ID > kubeconfig.tmp
         if [ $? -ne 0 ]; then
           echo "Error: Failed to get kubeconfig"
           exit 1
         fi
         echo "Successfully retrieved kubeconfig"
         
-        echo "Decoding kubeconfig"
-        base64 -d kubeconfig.b64 > ${GITHUB_WORKSPACE}/kubeconfig.yaml
+        echo "Content of retrieved kubeconfig:"
+        cat kubeconfig.tmp
         
-        echo "First few lines of decoded kubeconfig:"
+        if grep -q "apiVersion:" kubeconfig.tmp; then
+          echo "Content appears to be in YAML format, using as-is"
+          mv kubeconfig.tmp ${GITHUB_WORKSPACE}/kubeconfig.yaml
+        else
+          echo "Attempting to decode as base64"
+          base64 -d kubeconfig.tmp > ${GITHUB_WORKSPACE}/kubeconfig.yaml || (echo "Failed to decode, using as-is" && mv kubeconfig.tmp ${GITHUB_WORKSPACE}/kubeconfig.yaml)
+        fi
+        
+        echo "First few lines of processed kubeconfig:"
         head -n 10 ${GITHUB_WORKSPACE}/kubeconfig.yaml
       
     - name: Validate YAML
