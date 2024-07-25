@@ -90,16 +90,16 @@ jobs:
         echo "Content of retrieved kubeconfig:"
         cat kubeconfig.tmp
         
-        if grep -q "apiVersion:" kubeconfig.tmp; then
-          echo "Content appears to be in YAML format, using as-is"
-          mv kubeconfig.tmp ${GITHUB_WORKSPACE}/kubeconfig.yaml
-        else
-          echo "Attempting to decode as base64"
-          base64 -d kubeconfig.tmp > ${GITHUB_WORKSPACE}/kubeconfig.yaml || (echo "Failed to decode, using as-is" && mv kubeconfig.tmp ${GITHUB_WORKSPACE}/kubeconfig.yaml)
-        fi
+        # Extract the base64 content
+        BASE64_CONTENT=$(sed -n 's/^│ \(.*\) │$/\1/p' kubeconfig.tmp)
+        echo "Extracted base64 content:"
+        echo "$BASE64_CONTENT"
         
-        echo "First few lines of processed kubeconfig:"
-        head -n 10 ${GITHUB_WORKSPACE}/kubeconfig.yaml
+        # Decode the base64 content
+        echo "$BASE64_CONTENT" | base64 -d > ${GITHUB_WORKSPACE}/kubeconfig.yaml
+        
+        echo "Decoded kubeconfig content:"
+        cat ${GITHUB_WORKSPACE}/kubeconfig.yaml
       
     - name: Validate YAML
       run: |
@@ -113,9 +113,6 @@ jobs:
     - name: Deploy to LKE
       run: |
         export KUBECONFIG=${GITHUB_WORKSPACE}/kubeconfig.yaml
-        
-        echo "Kubeconfig content:"
-        cat ${GITHUB_WORKSPACE}/kubeconfig.yaml
         
         kubectl config view
         
