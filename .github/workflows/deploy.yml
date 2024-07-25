@@ -90,9 +90,9 @@ jobs:
         echo "Content of retrieved kubeconfig:"
         cat kubeconfig.tmp
         
-        # Extract the base64 content
-        BASE64_CONTENT=$(sed -n 's/^│ \(.*\) │$/\1/p' kubeconfig.tmp)
-        echo "Extracted base64 content:"
+        # Extract and clean up the base64 content
+        BASE64_CONTENT=$(sed -n 's/^│ \(.*\) │$/\1/p' kubeconfig.tmp | tr -d '[:space:]' | sed 's/kubeconfig//')
+        echo "Extracted and cleaned base64 content:"
         echo "$BASE64_CONTENT"
         
         # Decode the base64 content
