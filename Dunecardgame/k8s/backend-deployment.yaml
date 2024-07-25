@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: dune-backend-deployment
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: dune-backend
@@ -17,3 +17,20 @@ spec:
         image: dazdd/dune-backend:latest
         ports:
         - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          value: "postgres://taylor:Emerica23#@postgres-service:5432/dune_card_game"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dune-backend-service
+spec:
+  selector:
+    app: dune-backend
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
+

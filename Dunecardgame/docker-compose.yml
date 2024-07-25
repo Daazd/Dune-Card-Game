@@ -3,28 +3,32 @@ version: '3.8'
 services:
   db:
     image: postgres:13
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: dune_card_game
       POSTGRES_USER: taylor
-      POSTGRES_PASSWORD: Emerica23#
+      POSTGRES_PASSWORD: Emerica23%23  # URL encoded the #
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/usr/src/app
     ports:
       - "8000:8000"
+    environment:
+      - DATABASE_URL=postgres://taylor:Emerica23%23@db:5432/dune_card_game  # URL encoded the #
     depends_on:
       - db
-    environment:
-      - DATABASE_URL=postgres://taylor:Emerica23#@db:5432/dune_card_game
 
 volumes:
   postgres_data:
+
+
 
 

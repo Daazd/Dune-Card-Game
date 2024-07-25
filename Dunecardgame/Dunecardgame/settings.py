@@ -111,7 +111,7 @@ WSGI_APPLICATION = 'Dunecardgame.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
+    'default': dj_database_url.config(default='postgres://taylor:Emerica23#@db:5432/dune_card_game')
 }
 
 # Password validation
