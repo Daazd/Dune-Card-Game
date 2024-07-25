@@ -13,7 +13,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: dune-frontend-service
+            name: dune-backend-service
             port: 
               number: 8000
       - path: /media
@@ -27,7 +27,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: dune-media-service
+            name: dune-frontend-service
             port: 
               number: 80
 
