@@ -156,9 +156,15 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',  # React frontend running on port 3000
     'http://localhost:5173',
     'http://localhost:5432',
+    'http://localhost',  
+    'http://localhost:8000',
+    'http://66.175.217.167:30133',
+    'http://66.175.217.154:30133',
+    'http://66.175.217.145:30133',
+    
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True  # For development only, be more restrictive in production
+CORS_ALLOW_ALL_ORIGINS = False  # For development only, be more restrictive in production
 CORS_ALLOW_CREDENTIALS = True
 
 # Static files (CSS, JavaScript, Images)

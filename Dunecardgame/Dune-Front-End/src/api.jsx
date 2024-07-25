@@ -8,11 +8,22 @@ const axiosInstance = axios.create({
 });
 
 export const getCards = async () => {
+  console.log('Fetching cards from:', API_BASE_URL + '/cards/');
   try {
     const response = await axiosInstance.get('cards/');
+    console.log('Response:', response);
     return response.data;
   } catch (error) {
     console.error('Error fetching cards:', error);
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+      console.error('Response headers:', error.response.headers);
+    } else if (error.request) {
+      console.error('Request:', error.request);
+    } else {
+      console.error('Error:', error.message);
+    }
     throw error;
   }
 };
