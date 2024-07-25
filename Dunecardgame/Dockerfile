@@ -2,14 +2,17 @@ FROM python:3.10
 
 WORKDIR /usr/src/app
 
-# Copy the entire project
-COPY . .
+# Copy only necessary files
+COPY manage.py .
+COPY requirements.txt .
+COPY Dunecardgame ./Dunecardgame
+COPY gameapp ./gameapp
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Set Python path
-ENV PYTHONPATH=/usr/src/app:/usr/src/app/Dunecardgame:/usr/src/app/gameapp:$PYTHONPATH
+ENV PYTHONPATH=/usr/src/app:$PYTHONPATH
 
 EXPOSE 8000
 

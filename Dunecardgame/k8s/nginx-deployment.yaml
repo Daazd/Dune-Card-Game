@@ -20,7 +20,7 @@ spec:
         - containerPort: 80  # Assuming React app is served on port 80, adjust if different
         env:
         - name: REACT_APP_API_URL
-          value: "http://dune-backend-service:8000"  # This allows the frontend to communicate with the backend
+          value: "/api"  # This allows the frontend to communicate with the backend
 ---
 apiVersion: v1
 kind: Service
