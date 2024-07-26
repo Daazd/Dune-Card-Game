@@ -15,6 +15,7 @@ spec:
       containers:
       - name: dune-frontend
         image: dazdd/dune-frontend:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
         env:

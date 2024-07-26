@@ -15,6 +15,7 @@ spec:
       containers:
       - name: dune-backend
         image: dazdd/dune-backend:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8000
         env:
@@ -50,7 +51,7 @@ spec:
               name: backend-config
           - secretRef:
               name: backend-secret
-              
+
 apiVersion: v1
 kind: Service
 metadata:
