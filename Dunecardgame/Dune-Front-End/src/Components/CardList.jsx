@@ -9,15 +9,23 @@ const CardList = () => {
   const [cards, setCards] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredCards, setFilteredCards] = useState([]);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchCards = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/cards/`);
-        setCards(response.data);
-        setFilteredCards(response.data); // Initialize filteredCards with all cards
+        const response = await axios.get(`${API_BASE_URL}/cards/`);
+        console.log('API Response:', response.data); // Log the response data
+        if (Array.isArray(response.data)) {
+          setCards(response.data);
+          setFilteredCards(response.data);
+        } else {
+          console.error('API did not return an array:', response.data);
+          setError('Unexpected data format received from the server.');
+        }
       } catch (error) {
         console.error('Error fetching cards:', error);
+        setError('Failed to fetch cards. Please try again later.');
       }
     };
 

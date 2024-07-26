@@ -2,7 +2,7 @@
 FROM node:18 as build
 
 # Set the environment variable
-ENV REACT_APP_API_URL=http://dune-backend-service:8000/api
+ENV API_BASE_URL=http://dune-backend-service:8000/api
 
 # Set the working directory
 WORKDIR /app

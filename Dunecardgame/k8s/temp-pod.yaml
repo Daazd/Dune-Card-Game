@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: temp-pod
+spec:
+  containers:
+  - name: temp-container
+    image: busybox
+    command: ["/bin/sh", "-c", "sleep 3600"]
+    volumeMounts:
+    - name: pg-data
+      mountPath: /mnt/data
+  volumes:
+  - name: pg-data
+    persistentVolumeClaim:
+      claimName: pg-data-pvc
+

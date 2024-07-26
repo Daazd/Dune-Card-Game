@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: restore-db
+spec:
+  template:
+    spec:
+      containers:
+      - name: restore-db
+        image: postgres:latest
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres-service -U $POSTGRES_USER -d $POSTGRES_DB -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+            PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres-service -U $POSTGRES_USER -d $POSTGRES_DB < /mnt/config/db_dump.sql 2>&1 | tee /mnt/config/restore.log | grep -v 'duplicate key value violates unique constraint' | grep -v 'relation.*already exists'
+        env:
+        - name: POSTGRES_DB
+          value: "dune_card_game"
+        - name: POSTGRES_USER
+          value: "taylor"
+        - name: POSTGRES_PASSWORD
+          value: "Emerica23#"
+        volumeMounts:
+        - name: db-dump-config
+          mountPath: /mnt/config
+      restartPolicy: Never
+      volumes:
+      - name: db-dump-config
+        configMap:
+          name: db-dump-config
+  backoffLimit: 4
+
+
+
+
+
+
+
+
+
+
+
+

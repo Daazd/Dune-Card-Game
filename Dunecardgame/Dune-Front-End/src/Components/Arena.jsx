@@ -157,7 +157,7 @@ const Arena = ({
             <CardMedia
               component="img"
               height="100%"
-              image={`${process.env.REACT_APP_MEDIA_URL}/dune_card_images/${card.image_file}`}
+              image={`${API_BASE_URL}/dune_card_images/${card.image_file}`}
               alt={card.name}
               style={{ objectFit: 'cover', width: '100%', height: '100%' }}
             />
@@ -187,7 +187,7 @@ const Arena = ({
                 <CardMedia
                   key={idx}
                   component="img"
-                  image={`${process.env.REACT_APP_MEDIA_URL}/dune_card_images/House_Card_Back.jpg`}
+                  image={`${API_BASE_URL}/dune_card_images/House_Card_Back.jpg`}
                   alt="Face Down Card"
                   sx={{
                     width: '100%',
@@ -225,7 +225,7 @@ const Arena = ({
               <CardMedia
                 component="img"
                 height="100%"
-                image={`${process.env.REACT_APP_MEDIA_URL}/dune_card_images/${card.image_file}`}
+                image={`${API_BASE_URL}/dune_card_images/${card.image_file}`}
                 alt={card.name}
                 style={{ objectFit: 'cover', width: '100%', height: '100%' }}
               />
@@ -252,7 +252,7 @@ const Arena = ({
               <CardMedia
                 component="img"
                 height="100%"
-                image={`${process.env.REACT_APP_MEDIA_URL}/dune_card_images/${card.image_file}`}
+                image={`${API_BASE_URL}/dune_card_images/${card.image_file}`}
                 alt={card.name}
                 style={{ objectFit: 'cover', width: '100%', height: '100%' }}
               />
@@ -276,7 +276,7 @@ const Arena = ({
               <CardMedia
                 component="img"
                 height="100%"
-                image={`${process.env.REACT_APP_MEDIA_URL}/dune_card_images/${card.image_file}`}
+                image={`${API_BASE_URL}/dune_card_images/${card.image_file}`}
                 alt={card.name}
                 style={{ objectFit: 'cover', width: '100%', height: '100%' }}
               />
@@ -314,7 +314,7 @@ const Arena = ({
               <CardMedia
                 component="img"
                 height="200"
-                image={`${process.env.REACT_APP_MEDIA_URL}/dune_card_images/${selectedCard.image_file}`}
+                image={`${API_BASE_URL}/dune_card_images/${selectedCard.image_file}`}
                 alt={selectedCard.name}
               />
               <CardContent sx={{ color: '#e65100', marginBottom: 2 }}>
