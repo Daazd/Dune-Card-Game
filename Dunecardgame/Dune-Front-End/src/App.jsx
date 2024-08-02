@@ -13,6 +13,7 @@ import { getCards, getDecks, getCardsByDeck } from './api';
 import './App.css';
 import axios from 'axios';
 import axiosInstance from './api';
+import { API_BASE_URL } from './api'; 
 
 const App = () => {
   const [cards, setCards] = useState([]);
@@ -128,7 +129,6 @@ const App = () => {
       <Routes>
       <Route path="/" element={<Welcome setAuthToken={setAuthToken} setIsAdmin={setIsAdmin} authToken={authToken} isAdmin={isAdmin} setUsername={setUsername} />} />
         <Route path="/auth" element={<AuthPage setAuthToken={setAuthToken} setIsAdmin={setIsAdmin} setUsername={setUsername} />} />
-        <Route path="/admin" element={<Admin authToken={authToken} isAdmin={isAdmin} />} />
         <Route path="/account" element={<Account authToken={authToken} />} />
         <Route path="/game" element={
           <Container>

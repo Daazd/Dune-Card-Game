@@ -18,8 +18,5 @@ urlpatterns = [
     path('api/user/', UserDetailView.as_view(), name='user-detail'),
     path('api/token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', MyTokenRefreshView.as_view(), name='token_refresh'),
-] 
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

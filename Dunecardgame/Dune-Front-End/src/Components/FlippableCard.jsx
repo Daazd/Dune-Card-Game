@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardMedia, CardContent, Typography, Box } from '@mui/material';
 import './FlippableCard.css';
+import { API_BASE_URL, MEDIA_URL } from '../api'; 
 
 const FlippableCard = ({ card }) => {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -20,7 +21,7 @@ const FlippableCard = ({ card }) => {
           <CardMedia
             component="img"
             height="100%"
-            image={`${process.env.REACT_APP_MEDIA_URL}/media/dune_card_images/${card.image_file}`}
+            image={`${MEDIA_URL}dune_card_images/${card.image_file}`}
             alt={card.name}
             style={{ objectFit: 'cover', width: '100%', height: '100%' }}
           />

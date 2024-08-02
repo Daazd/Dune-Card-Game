@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, TextField, Button } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../api'; 
 
 const Account = ({ authToken }) => {
   const [userData, setUserData] = useState({ username: '', email: '' });
@@ -14,7 +15,7 @@ const Account = ({ authToken }) => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_MEDIA_URL}/api/user/`, {
+        const response = await axios.get(`${API_BASE_URL}/api/user/`, {
           headers: {
             Authorization: `Token ${authToken}`,
           },
@@ -32,7 +33,7 @@ const Account = ({ authToken }) => {
 
   const handleUpdate = async () => {
     try {
-      const response = await axios.put(`${process.env.REACT_APP_MEDIA_URL}/api/user/`, {
+      const response = await axios.put(`${API_BASE_URL}/api/user/`, {
         username: newUsername,
         email: newEmail,
         password: newPassword,

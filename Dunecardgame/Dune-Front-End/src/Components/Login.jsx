@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, TextField, Button, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../api'; 
 
 const Login = ({ setAuthToken, setIsAdmin }) => {
   const [username, setUsername] = useState('');
@@ -11,7 +12,7 @@ const Login = ({ setAuthToken, setIsAdmin }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post(`$${API_BASE_URL}/api/login/`, {
+      const response = await axios.post(`${API_BASE_URL}/api/login/`, {
         username,
         password,
       });

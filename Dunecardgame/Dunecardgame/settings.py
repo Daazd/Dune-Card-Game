@@ -37,13 +37,12 @@ print(f"Updated Python path: {sys.path}")
 SECRET_KEY = 'django-insecure-uj2ek4155pt0-6=9y=kh+@3bp88qtb=vu&@o1rvo^9$w1n$-&7'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'dune-backend-nodeport', 'dune-backend-service', '66.175.217.167', '*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'dune-backend-nodeport', 'dune-backend-service', '66.175.217.167', '66.175.217.154', '66.175.217.145', '45.79.231.182']
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'gameapp', 'media')
-REACT_APP_MEDIA_URL='/media'
 
 # Application definition
 
@@ -63,6 +62,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -175,8 +175,10 @@ CORS_ALLOW_CREDENTIALS = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_ROOT = '/usr/src/app/staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -184,3 +186,21 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 APPEND_SLASH = True
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 1209600  # 2 weeks, in seconds
+SESSION_COOKIE_SECURE = False  # Set to True if using HTTPS
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+CSRF_COOKIE_SECURE = False  # Set to True if using HTTPS
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_TRUSTED_ORIGINS = [
+    'http://66.175.217.167:30133',
+    'http://66.175.217.154:30133',
+    'http://66.175.217.145:30133',
+    'http://45.79.231.182',
+]
+
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None

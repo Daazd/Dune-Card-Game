@@ -6,6 +6,7 @@ import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
 import PersonIcon from '@mui/icons-material/Person';
 import axios from 'axios';
 import AuthModal from './AuthModal';
+import { API_BASE_URL } from '../api'; 
 
 const Welcome = ({ setAuthToken, setIsAdmin, authToken, isAdmin }) => {
   const [loginOpen, setLoginOpen] = useState(false);
@@ -18,7 +19,7 @@ const Welcome = ({ setAuthToken, setIsAdmin, authToken, isAdmin }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_MEDIA_URL}/api/login/`, {
+      const response = await axios.post(`${API_BASE_URL}/api/login/`, {
         username,
         password,
       });
@@ -37,7 +38,7 @@ const Welcome = ({ setAuthToken, setIsAdmin, authToken, isAdmin }) => {
 
   const handleRegister = async () => {
     try {
-      await axios.post(`${process.env.REACT_APP_MEDIA_URL}/api/register/`, {
+      await axios.post(`${API_BASE_URL}/api/register/`, {
         username,
         password,
         email,
@@ -50,7 +51,7 @@ const Welcome = ({ setAuthToken, setIsAdmin, authToken, isAdmin }) => {
   };
 
   const handleAdminClick = () => {
-    window.location.href = `${process.env.REACT_APP_MEDIA_URL}/admin/`;
+    window.location.href = `${API_BASE_URL.replace('/api', '')}/admin/`;
   };
 
   return (

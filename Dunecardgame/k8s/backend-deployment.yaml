@@ -12,12 +12,18 @@ spec:
       labels:
         app: dune-backend
     spec:
+      volumes:
+        - name: static-files
+          emptyDir: {}
       containers:
       - name: dune-backend
         image: dazdd/dune-backend:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
+        volumeMounts:
+          - name: static-files
+            mountPath: /app/staticfiles
         env:
           - name: DB_NAME
             valueFrom:

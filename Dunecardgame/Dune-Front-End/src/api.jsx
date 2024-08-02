@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
-const MEDIA_URL = process.env.REACT_APP_MEDIA_URL || '/media';
+export const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
+export const MEDIA_URL = process.env.REACT_APP_MEDIA_URL || '/media/';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,

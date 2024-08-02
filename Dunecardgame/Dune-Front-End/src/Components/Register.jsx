@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, TextField, Button, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../api'; 
 
 const Register = () => {
   const [username, setUsername] = useState('');
@@ -12,7 +13,7 @@ const Register = () => {
 
   const handleRegister = async () => {
     try {
-      await axios.post(`${process.env.REACT_APP_MEDIA_URL}/api/register/`, {
+      await axios.post(`${API_BASE_URL}/api/register/`, {
         username,
         password,
         email,

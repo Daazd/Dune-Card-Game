@@ -1,8 +1,11 @@
+ARG CACHEBUST=1
+
 # Use the official Node.js image as the base image
 FROM node:18 as build
 
 # Set the environment variable
-ENV API_BASE_URL=http://dune-backend-service:8000/api
+ENV REACT_APP_API_URL=http://dune-backend-service:8000/api
+ENV REACT_APP_MEDIA_URL=http://dune-backend-service:8000/media
 
 # Set the working directory
 WORKDIR /app
@@ -16,8 +19,12 @@ RUN npm install
 # Copy the rest of the application code to the working directory
 COPY . .
 
+RUN echo "CACHEBUST=${CACHEBUST}"
+
 # Build the application for production
-RUN npm run build
+ARG REACT_APP_API_URL
+ARG REACT_APP_MEDIA_URL
+RUN REACT_APP_API_URL=$REACT_APP_API_URL REACT_APP_MEDIA_URL=$REACT_APP_MEDIA_URL npm run build
 
 # Use a smaller base image for the production environment
 FROM nginx:alpine
