@@ -1,4 +1,5 @@
 from django.http import JsonResponse
+from django.core.cache import cache
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -22,8 +23,14 @@ class CardViewSet(viewsets.ModelViewSet):
     serializer_class = CardSerializer
 
 def get_cards(request):
-    cards = list(Card.objects.values())
-    return JsonResponse(cards, safe=False)
+    cache_key = 'all_cards'
+    cards = cache.get(cache_key)
+    if not cards:
+        cards = list(Card.objects.all())
+        cache.set(cache_key, cards, timeout=300)  # Cache for 5 minutes
+
+    serialized_cards = CardSerializer(cards, many=True).data
+    return JsonResponse(serialized_cards, safe=False)
 
 def get_decks(request):
     decks = Card.objects.values_list('deck', flat=True).distinct()

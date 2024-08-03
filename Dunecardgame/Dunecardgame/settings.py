@@ -70,6 +70,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'gameapp.middleware.SessionRefreshMiddleware',
 ]
 
 ROOT_URLCONF = 'Dunecardgame.urls'
@@ -122,7 +123,7 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'Emerica23#'),
         'HOST': os.environ.get('DB_HOST', 'postgres-service'),
         'PORT': os.environ.get('DB_PORT', '5432'),
-        
+        'CONN_MAX_AGE': 300,
     }
 }
 
@@ -188,7 +189,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 APPEND_SLASH = True
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_AGE = 1209600  # 2 weeks, in seconds
 SESSION_COOKIE_NAME = 'sessionid'
 SESSION_COOKIE_SECURE = False  # Set to True if using HTTPS
