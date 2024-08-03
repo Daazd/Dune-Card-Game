@@ -7,7 +7,6 @@ import CardList from './Components/CardList';
 import Login from './Components/Login';
 import Register from './Components/Register';
 import Account from './Components/Account';
-import Admin from './Components/Admin';
 import AuthPage from './Components/AuthPage';
 import { getCards, getDecks, getCardsByDeck } from './api';
 import './App.css';

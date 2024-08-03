@@ -14,6 +14,11 @@ const FlippableCard = ({ card }) => {
     return data === "NaN" ? "" : data;
   };
 
+  useEffect(() => {
+    console.log('Card data:', card);
+    console.log('Image URL:', `${MEDIA_URL}${card.image_file}`);
+  }, [card]);
+
   return (
     <Box className={`flippable-card ${isFlipped ? 'flipped' : ''}`} onClick={handleFlip}>
       <Box className="flippable-card-inner">

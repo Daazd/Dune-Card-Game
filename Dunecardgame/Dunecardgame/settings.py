@@ -70,7 +70,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'gameapp.middleware.SessionRefreshMiddleware',
+    
 ]
 
 ROOT_URLCONF = 'Dunecardgame.urls'
@@ -123,7 +123,6 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'Emerica23#'),
         'HOST': os.environ.get('DB_HOST', 'postgres-service'),
         'PORT': os.environ.get('DB_PORT', '5432'),
-        'CONN_MAX_AGE': 300,
     }
 }
 
@@ -192,7 +191,6 @@ APPEND_SLASH = True
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
     }
 }
 

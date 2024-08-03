@@ -51,7 +51,7 @@ const Welcome = ({ setAuthToken, setIsAdmin, authToken, isAdmin }) => {
   };
 
   const handleAdminClick = () => {
-    window.location.href = `${API_BASE_URL.replace('/api', '')}/admin/`;
+    window.location.href = `${window.location.protocol}//${window.location.hostname}/admin/`;
   };
 
   return (
