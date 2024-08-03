@@ -122,6 +122,7 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'Emerica23#'),
         'HOST': os.environ.get('DB_HOST', 'postgres-service'),
         'PORT': os.environ.get('DB_PORT', '5432'),
+        
     }
 }
 
@@ -189,6 +190,7 @@ APPEND_SLASH = True
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks, in seconds
+SESSION_COOKIE_NAME = 'sessionid'
 SESSION_COOKIE_SECURE = False  # Set to True if using HTTPS
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
