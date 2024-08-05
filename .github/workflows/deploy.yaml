@@ -35,18 +35,20 @@ jobs:
       uses: aws-actions/amazon-ecr-login@v1
 
     - name: Build and push backend Docker image
+      working-directory: ./Dunecardgame
       env:
         DB_NAME: ${{ secrets.DB_NAME }}
         DB_USER: ${{ secrets.DB_USER }}
         DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       run: |
-        docker build -t dune-cf-backend:latest -f ./Dunecardgame/Dockerfile ./Dunecardgame
+        docker build -t dune-cf-backend:latest -f Dockerfile .
         docker tag dune-cf-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
 
     # Frontend build and deploy to S3
     - name: Build frontend Docker image
-      run: docker build -t dune-cf-frontend:latest -f ./Dunecardgame/Dune-Front-End/Dockerfile ./Dunecardgame/Dune-Front-End 
+      working-directory: ./Dune-Front-End
+      run: docker build -t dune-cf-frontend:latest .
 
     - name: Extract frontend build artifacts
       run: |
@@ -59,7 +61,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1  # Change to your region
+        aws-region: us-west-2  # Change to your region
 
     - name: Sync files to S3
       run: aws s3 sync ./build s3://dune-cf-bucket-23 --delete
