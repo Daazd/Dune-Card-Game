@@ -90,16 +90,21 @@ jobs:
           echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
       
-    - name: Deploy to EC2 via SSH
+    - name: Deploy to EC2 via EC2 Instance Connect
       run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PRIVATE_IP }} "
-            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest &&
-            docker stop dune-backend || true &&
-            docker rm dune-backend || true &&
-            docker run -d --name dune-backend -p 8000:8000 \
-              -e DB_NAME=${{ secrets.DB_NAME }} \
-              -e DB_USER=${{ secrets.DB_USER }} \
-              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-              -e DB_HOST=${{ secrets.DB_HOST }} \
-              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
-          "
+        aws ec2-instance-connect send-ssh-public-key \
+          --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+          --availability-zone "${{ env.EC2_AVAILABILITY_ZONE }}" \
+          --instance-os-user ec2-user \
+          --ssh-public-key "$(cat ~/.ssh/id_rsa.pub)"
+        ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PRIVATE_IP }} "
+          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest &&
+          docker stop dune-backend || true &&
+          docker rm dune-backend || true &&
+          docker run -d --name dune-backend -p 8000:8000 \
+            -e DB_NAME=${{ secrets.DB_NAME }} \
+            -e DB_USER=${{ secrets.DB_USER }} \
+            -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            -e DB_HOST=${{ secrets.DB_HOST }} \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
+        "
