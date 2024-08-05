@@ -84,20 +84,26 @@ jobs:
       run: |
         aws ec2 describe-instance-status --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'InstanceStatuses[0].InstanceState.Name' --output text
 
-    - name: Install SSH key
+    - name: Get EC2 Instance Availability Zone
       run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-      
+          AZ=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].Placement.AvailabilityZone' --output text)
+          echo "EC2_AVAILABILITY_ZONE=$AZ" >> $GITHUB_ENV
+          echo "Availability Zone: $AZ"
+
     - name: Deploy to EC2 via EC2 Instance Connect
       run: |
+        # Generate a temporary SSH key pair
+        ssh-keygen -t rsa -b 4096 -f ./tempkey -N ""
+        
+        # Send the public key
         aws ec2-instance-connect send-ssh-public-key \
           --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
           --availability-zone "${{ env.EC2_AVAILABILITY_ZONE }}" \
           --instance-os-user ec2-user \
-          --ssh-public-key "$(cat ~/.ssh/id_rsa.pub)"
-        ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PRIVATE_IP }} "
+          --ssh-public-key file://tempkey.pub
+        
+        # Use the private key to SSH and run commands
+        ssh -o StrictHostKeyChecking=no -i ./tempkey ec2-user@${{ secrets.EC2_PRIVATE_IP }} "
           docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest &&
           docker stop dune-backend || true &&
           docker rm dune-backend || true &&
@@ -108,3 +114,6 @@ jobs:
             -e DB_HOST=${{ secrets.DB_HOST }} \
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
         "
+        
+        # Clean up the temporary key
+        rm ./tempkey ./tempkey.pub
