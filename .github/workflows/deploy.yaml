@@ -34,6 +34,10 @@ jobs:
     - name: Log in to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v1
 
+    - name: Debug ECR URL
+      run: |
+        echo ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
+
     - name: Build and push backend Docker image
       working-directory: ./Dunecardgame
       env:
@@ -44,10 +48,6 @@ jobs:
         docker build -t dune-cf-backend:latest -f Dockerfile .
         docker tag dune-cf-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
-
-    - name: Debug ECR URL
-      run: |
-        echo ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
 
     # Frontend build and deploy to S3
     - name: Build frontend Docker image
