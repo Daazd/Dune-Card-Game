@@ -48,7 +48,7 @@ jobs:
         docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/dune-cf-backend:latest
 
     - name: Build frontend Docker image
-      working-directory: ./Dune-Front-End
+      working-directory: Dune-Front-End
       run: docker build -t dune-cf-frontend:latest .
 
     - name: Extract frontend build artifacts
