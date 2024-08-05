@@ -79,7 +79,20 @@ jobs:
 
     - name: Invalidate CloudFront cache
       run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
-    
+
+    - name: Check EC2 instance state
+      run: |
+        aws ec2 describe-instance-status --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'InstanceStatuses[0].InstanceState.Name' --output text
+
+    - name: Check SSM Agent status
+      run: |
+          AGENT_STATUS=$(aws ssm describe-instance-information --filters "Key=InstanceIds,Values=${{ secrets.EC2_INSTANCE_ID }}" --query "InstanceInformationList[0].PingStatus" --output text)
+          echo "SSM Agent status: $AGENT_STATUS"
+          if [ "$AGENT_STATUS" != "Online" ]; then
+            echo "Error: SSM Agent is not online"
+            exit 1
+          fi
+
     - name: Deploy to EC2 via AWS CLI
       env:
         EC2_INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
