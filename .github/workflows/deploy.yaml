@@ -57,16 +57,16 @@ jobs:
         docker cp $container_id:/usr/share/nginx/html ./dist
         docker rm $container_id
 
-    - name: Install unzip
+    - name: Install unzip and AWS CLI in Docker
       run: |
-        sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=60 && \
-        sudo apt-get install -y --no-install-recommends unzip
-
-    - name: Install AWS CLI
-      run: |
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip awscliv2.zip
-        sudo ./aws/install
+        docker run --rm -v $(pwd):/workspace -w /workspace ubuntu:20.04 /bin/bash -c "\
+          apt-get update && \
+          apt-get install -y unzip curl python3-pip && \
+          curl 'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip' -o 'awscliv2.zip' && \
+          unzip awscliv2.zip && \
+          ./aws/install && \
+          pip3 install awscli && \
+          rm -rf awscliv2.zip aws"
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
