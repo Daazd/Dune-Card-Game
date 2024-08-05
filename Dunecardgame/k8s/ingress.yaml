@@ -2,45 +2,47 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: dune-ingress
+  namespace: default
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   ingressClassName: nginx
   rules:
   - http:
       paths:
-      - path: /api(/|$)(.*)
-        pathType: Prefix
-        backend:
+      - backend:
           service:
             name: dune-backend-service
             port:
               number: 8000
-      - path: /admin(/|$)(.*)
+        path: /api(/|$)(.*)
         pathType: Prefix
-        backend:
+      - backend:
           service:
             name: dune-backend-service
             port:
               number: 8000
-      - path: /static(/|$)(.*)
+        path: /admin(/|$)(.*)
         pathType: Prefix
-        backend:
+      - backend:
           service:
             name: dune-backend-service
             port:
               number: 8000
-      - path: /media(/|$)(.*)
+        path: /static(/|$)(.*)
         pathType: Prefix
-        backend:
+      - backend:
           service:
             name: dune-backend-service
             port:
               number: 8000
-      - path: /(.*)
+        path: /media(/|$)(.*)
         pathType: Prefix
-        backend:
+      - backend:
           service:
             name: dune-frontend-service
             port:
               number: 80
+        path: /
+        pathType: Prefix
