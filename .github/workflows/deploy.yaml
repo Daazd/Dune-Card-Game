@@ -66,6 +66,7 @@ jobs:
           unzip awscliv2.zip && \
           ./aws/install && \
           pip3 install awscli && \
+          pip3 install botocore s3transfer && \
           rm -rf awscliv2.zip aws"
 
     - name: Configure AWS credentials
