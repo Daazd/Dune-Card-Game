@@ -29,7 +29,7 @@ COPY gameapp/media /usr/src/app/gameapp/media
 
 RUN mkdir -p /usr/src/app/staticfiles /usr/src/app/media
 
-RUN python manage.py collectstatic --noinput
+#RUN python manage.py collectstatic --noinput
 
 RUN chown -R www-data:www-data /usr/src/app/staticfiles /usr/src/app/media /usr/src/app/gameapp
 
