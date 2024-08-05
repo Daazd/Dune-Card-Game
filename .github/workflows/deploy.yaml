@@ -40,17 +40,17 @@ jobs:
         DB_USER: ${{ secrets.DB_USER }}
         DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       run: |
-        docker build -t DUNE-backend:latest -f backend/Dockerfile .
-        docker tag DUNE-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/DUNE-backend:latest
-        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/DUNE-backend:latest
+        docker build -t dune-cf-backend:latest -f backend/Dockerfile .
+        docker tag dune-cf-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
 
     # Frontend build and deploy to S3
     - name: Build frontend Docker image
-      run: docker build -t DUNE-frontend:latest -f frontend/Dockerfile .
+      run: docker build -t dune-cf-frontend:latest -f frontend/Dockerfile .
 
     - name: Extract frontend build artifacts
       run: |
-        container_id=$(docker create DUNE-frontend:latest)
+        container_id=$(docker create dune-cf-frontend:latest)
         docker cp $container_id:/app/build ./build
         docker rm $container_id
 
@@ -62,12 +62,12 @@ jobs:
         aws-region: us-east-1  # Change to your region
 
     - name: Sync files to S3
-      run: aws s3 sync ./build s3://dune-bucket-23 --delete
+      run: aws s3 sync ./build s3://dune-cf-bucket-23 --delete
 
     - name: Invalidate CloudFront cache
       run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
 
     - name: Deploy to Elastic Beanstalk
       run: |
-        eb init -p docker dune-app --region ${{ secrets.AWS_REGION }}
+        eb init -p docker dune-cf-app --region ${{ secrets.AWS_REGION }}
         eb deploy
