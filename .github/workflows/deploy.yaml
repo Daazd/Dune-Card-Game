@@ -90,6 +90,18 @@ jobs:
           echo "EC2_AVAILABILITY_ZONE=$AZ" >> $GITHUB_ENV
           echo "Availability Zone: $AZ"
 
+    - name: Debug Network
+      run: |
+            echo "EC2 Instance IP: ${{ secrets.EC2_PRIVATE_IP }}"
+            echo "Pinging EC2 instance..."
+            ping -c 4 ${{ secrets.EC2_PRIVATE_IP }} || echo "Ping failed"
+            echo "Attempting to telnet..."
+            timeout 5 telnet ${{ secrets.EC2_PRIVATE_IP }} 22 || echo "Telnet failed"
+            echo "Tracing route..."
+            traceroute ${{ secrets.EC2_PRIVATE_IP }} || echo "Traceroute failed"
+            echo "Checking AWS EC2 instance status..."
+            aws ec2 describe-instance-status --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --include-all-instances
+
     - name: Deploy to EC2 via EC2 Instance Connect
       run: |
         # Generate a temporary SSH key pair
@@ -103,7 +115,7 @@ jobs:
           --ssh-public-key file://tempkey.pub
         
         # Use the private key to SSH and run commands
-        ssh -o StrictHostKeyChecking=no -i ./tempkey ec2-user@${{ secrets.EC2_PRIVATE_IP }} "
+        ssh -v -o StrictHostKeyChecking=no -i ./tempkey ec2-user@${{ secrets.EC2_PRIVATE_IP }} "echo 'SSH connection successful'"
           docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest &&
           docker stop dune-backend || true &&
           docker rm dune-backend || true &&
