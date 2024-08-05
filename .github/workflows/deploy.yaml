@@ -54,7 +54,7 @@ jobs:
     - name: Extract frontend build artifacts
       run: |
         container_id=$(docker create dune-cf-frontend:latest)
-        docker cp $container_id:/app/build ./build
+        docker cp $container_id:/app/dist ./dist
         docker rm $container_id
 
     - name: Configure AWS credentials
