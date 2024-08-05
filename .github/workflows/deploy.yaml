@@ -40,13 +40,13 @@ jobs:
         DB_USER: ${{ secrets.DB_USER }}
         DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       run: |
-        docker build -t dune-cf-backend:latest -f ./Dunecardgame/Dockerfile ./Dunecardgame .
+        docker build -t dune-cf-backend:latest -f ./Dunecardgame/Dockerfile ./Dunecardgame
         docker tag dune-cf-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
 
     # Frontend build and deploy to S3
     - name: Build frontend Docker image
-      run: docker build -t dune-cf-frontend:latest -f ./Dunecardgame/Dune-Front-End/Dockerfile ./Dunecardgame/Dune-Front-End .
+      run: docker build -t dune-cf-frontend:latest -f ./Dunecardgame/Dune-Front-End/Dockerfile ./Dunecardgame/Dune-Front-End 
 
     - name: Extract frontend build artifacts
       run: |
