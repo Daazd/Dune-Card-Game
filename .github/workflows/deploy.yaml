@@ -87,7 +87,7 @@ jobs:
 
     - name: Deploy to Elastic Beanstalk
       env:
-        EB_ENV: Dune-Card-Game-env
+        EB_ENV: Dune-Card-Game
       run: |
         eb init -p docker dune-app --region ${{ secrets.AWS_REGION }} --platform "Docker running on 64bit Amazon Linux 2"
         eb use $EB_ENV
