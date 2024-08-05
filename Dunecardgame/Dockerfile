@@ -17,15 +17,21 @@ RUN pip install --upgrade pip
 
 COPY requirements.txt ./
 
-COPY staticfiles /app/staticfiles
-
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-#RUN python3 manage.py collectstatic --noinput
+RUN mkdir -p /usr/src/app/gameapp/media/dune_card_images
 
-RUN chown -R www-data:www-data /app
+COPY gameapp/media/dune_card_images /usr/src/app/gameapp/media/dune_card_images
+
+COPY gameapp/media /usr/src/app/gameapp/media
+
+RUN mkdir -p /usr/src/app/staticfiles /usr/src/app/media
+
+RUN python manage.py collectstatic --noinput
+
+RUN chown -R www-data:www-data /usr/src/app/staticfiles /usr/src/app/media /usr/src/app/gameapp
 
 ENV PYTHONPATH="${PYTHONPATH}:/usr/src/app:/usr/src/app/gameapp"
 

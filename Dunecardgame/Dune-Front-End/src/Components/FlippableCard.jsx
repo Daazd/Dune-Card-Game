@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardMedia, CardContent, Typography, Box } from '@mui/material';
 import './FlippableCard.css';
 import { API_BASE_URL, MEDIA_URL } from '../api'; 
@@ -16,7 +16,7 @@ const FlippableCard = ({ card }) => {
 
   useEffect(() => {
     console.log('Card data:', card);
-    console.log('Image URL:', `${MEDIA_URL}${card.image_file}`);
+    console.log('Image URL:', `${MEDIA_URL}dune_card_images/${card.image_file}`);
   }, [card]);
 
   return (
@@ -26,7 +26,7 @@ const FlippableCard = ({ card }) => {
           <CardMedia
             component="img"
             height="100%"
-            image={`${MEDIA_URL}${card.image_file}`}
+            image={`${MEDIA_URL}dune_card_images/${card.image_file}`}
             alt={card.name}
             style={{ objectFit: 'cover', width: '100%', height: '100%' }}
           />
