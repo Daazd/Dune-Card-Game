@@ -45,6 +45,10 @@ jobs:
         docker tag dune-cf-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
 
+    - name: Debug ECR URL
+      run: |
+        echo ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
+
     # Frontend build and deploy to S3
     - name: Build frontend Docker image
       working-directory: ./Dune-Front-End
