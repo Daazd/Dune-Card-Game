@@ -37,7 +37,7 @@ print(f"Updated Python path: {sys.path}")
 SECRET_KEY = 'django-insecure-uj2ek4155pt0-6=9y=kh+@3bp88qtb=vu&@o1rvo^9$w1n$-&7'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'dune-backend-nodeport', 'dune-backend-service', '66.175.217.167', '66.175.217.154', '66.175.217.145', '45.79.231.182']
 
