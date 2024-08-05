@@ -57,6 +57,12 @@ jobs:
         docker cp $container_id:/usr/share/nginx/html ./dist
         docker rm $container_id
 
+    - name: Install AWS CLI
+      run: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install
+
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
