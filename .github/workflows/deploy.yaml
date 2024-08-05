@@ -58,7 +58,9 @@ jobs:
         docker rm $container_id
 
     - name: Install unzip
-      run: sudo apt-get update && sudo apt-get install -y unzip
+      run: |
+        sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=60 && \
+        sudo apt-get install -y --no-install-recommends unzip
 
     - name: Install AWS CLI
       run: |
