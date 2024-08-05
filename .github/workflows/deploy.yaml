@@ -80,25 +80,17 @@ jobs:
     - name: Invalidate CloudFront cache
       run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
     
-    - name: Install Session Manager plugin
-      run: |
-        curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
-        sudo dpkg -i session-manager-plugin.deb
-    
-    - name: Deploy to EC2 via Session Manager
+    - name: Deploy to EC2 via AWS CLI
       env:
         EC2_INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
       run: |
-          aws ssm start-session --target $EC2_INSTANCE_ID --document-name AWS-StartInteractiveCommand --parameters command="
-            # Docker commands here
-            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
-            docker stop dune-backend || true
-            docker rm dune-backend || true
-            docker run -d --name dune-backend \
-              -p 8000:8000 \
-              -e DB_NAME=${{ secrets.DB_NAME }} \
-              -e DB_USER=${{ secrets.DB_USER }} \
-              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-              -e DB_HOST=${{ secrets.DB_HOST }} \
-              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
-          "
+        aws ssm send-command \
+          --instance-ids "$EC2_INSTANCE_ID" \
+          --document-name "AWS-RunShellScript" \
+          --parameters 'commands=[
+            "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest",
+            "docker stop dune-backend || true",
+            "docker rm dune-backend || true",
+            "docker run -d --name dune-backend -p 8000:8000 -e DB_NAME=${{ secrets.DB_NAME }} -e DB_USER=${{ secrets.DB_USER }} -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} -e DB_HOST=${{ secrets.DB_HOST }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest"
+          ]' \
+          --output text
