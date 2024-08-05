@@ -69,6 +69,11 @@ jobs:
 
     - name: Invalidate CloudFront cache
       run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+    
+    - name: Install Elastic Beanstalk CLI
+      run: |
+        pip install --upgrade pip
+        pip install awsebcli
 
     - name: Deploy to Elastic Beanstalk
       run: |
