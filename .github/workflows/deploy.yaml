@@ -40,6 +40,10 @@ jobs:
       uses: aws-actions/amazon-ecr-login@v1
 
     - name: Build and push backend Docker image
+      env:
+        DB_NAME: ${{ secrets.DB_NAME }}
+        DB_USER: ${{ secrets.DB_USER }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       run: |
         docker build -t DUNE-backend:latest -f backend/Dockerfile .
         docker tag DUNE-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/DUNE-backend:latest
@@ -66,7 +70,7 @@ jobs:
       run: aws s3 sync ./build s3://dune-bucket-23 --delete
 
     - name: Invalidate CloudFront cache
-      run: aws cloudfront create-invalidation --E3P5XUMZQ1QJMV E3P5XUMZQ1QJMV --paths "/*"
+      run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
 
     - name: Deploy to Elastic Beanstalk
       run: |
