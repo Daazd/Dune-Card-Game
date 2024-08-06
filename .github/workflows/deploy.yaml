@@ -154,10 +154,11 @@ jobs:
           aws ec2 modify-network-interface-attribute --network-interface-id $NEW_ENI_ID --groups $SG_ID
       
           # Attach the new network interface to the instance
-          aws ec2 attach-network-interface --network-interface-id $NEW_ENI_ID --instance-id ${{ secrets.EC2_INSTANCE_ID }} --device-index 1
+          ATTACHMENT_ID=$(aws ec2 attach-network-interface --network-interface-id $NEW_ENI_ID --instance-id ${{ secrets.EC2_INSTANCE_ID }} --device-index 1 --query 'AttachmentId' --output text)
+          echo "Attachment ID: $ATTACHMENT_ID"
       
           # Modify instance attribute to use the new network interface as primary
-          aws ec2 modify-instance-attribute --instance-id ${{ secrets.EC2_INSTANCE_ID }} --network-interface '{"DeviceIndex": 1, "NetworkInterfaceId": "'$NEW_ENI_ID'", "DeleteOnTermination": true}'
+          aws ec2 modify-instance-attribute --instance-id ${{ secrets.EC2_INSTANCE_ID }} --attachment "{\"AttachmentId\":\"$ATTACHMENT_ID\",\"DeleteOnTermination\":true}"
       
           # Start the instance
           aws ec2 start-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
@@ -168,7 +169,8 @@ jobs:
           OLD_ENI_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].NetworkInterfaces[?Attachment.DeviceIndex==`0`].NetworkInterfaceId' --output text)
       
           # Detach and delete the old network interface
-          aws ec2 detach-network-interface --attachment-id $(aws ec2 describe-network-interfaces --network-interface-ids $OLD_ENI_ID --query 'NetworkInterfaces[0].Attachment.AttachmentId' --output text)
+          OLD_ATTACHMENT_ID=$(aws ec2 describe-network-interfaces --network-interface-ids $OLD_ENI_ID --query 'NetworkInterfaces[0].Attachment.AttachmentId' --output text)
+          aws ec2 detach-network-interface --attachment-id $OLD_ATTACHMENT_ID
           aws ec2 delete-network-interface --network-interface-id $OLD_ENI_ID
       
     - name: Update Public IP
