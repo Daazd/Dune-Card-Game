@@ -1,0 +1,18 @@
+{
+    "AWSEBDockerrunVersion": "1",
+    "Image": {
+      "Name": "255595886835.dkr.ecr.us-west-2.amazonaws.com/dune-cf-backend:latest",
+      "Update": "true"
+    },
+    "Ports": [
+      {
+        "ContainerPort": "8000"
+      }
+    ],
+    "Volumes": [
+      {
+        "HostDirectory": "/var/app/current/gameapp/media",
+        "ContainerDirectory": "/usr/src/app/gameapp/media"
+      }
+    ]
+  }
