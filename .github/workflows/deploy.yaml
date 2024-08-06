@@ -83,11 +83,12 @@ jobs:
     - name: Check EC2 instance state
       run: |
         aws ec2 describe-instance-status --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'InstanceStatuses[0].InstanceState.Name' --output text
+    
+    - name: Set umask
+      run: umask 077
 
     - name: Generate SSH key
-      run: 
-        umask 077
-        ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
+      run: ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
   
     - name: Verify permissions for SSH key
       run: ls -l ./id_rsa
