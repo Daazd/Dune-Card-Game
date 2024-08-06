@@ -84,6 +84,10 @@ jobs:
     - name: Get VPC and Subnet Info
       run: |
         VPC_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].VpcId' --output text)
+        if [ "$VPC_ID" == "None" ]; then
+          echo "Error: VPC ID is None"
+          exit 1
+        fi
         CURRENT_SUBNET_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SubnetId' --output text)
         AZ=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].Placement.AvailabilityZone' --output text)
         echo "VPC ID: $VPC_ID"
@@ -107,6 +111,10 @@ jobs:
       if: env.PUBLIC_SUBNET_ID == ''
       run: |
         IGW_ID=$(aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=${{ env.VPC_ID }}" --query 'InternetGateways[0].InternetGatewayId' --output text)
+        if [ "$IGW_ID" == "None" ]; then
+          echo "Error: Internet Gateway ID is None"
+          exit 1
+        fi
         NEW_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ env.VPC_ID }} --cidr-block 10.0.2.0/24 --availability-zone ${{ env.AZ }} --query 'Subnet.SubnetId' --output text)
         echo "New Subnet ID: $NEW_SUBNET_ID"
         
@@ -119,59 +127,150 @@ jobs:
         
         echo "PUBLIC_SUBNET_ID=$NEW_SUBNET_ID" >> $GITHUB_ENV
 
-    - name: Launch new EC2 instance in Public Subnet
+    - name: Move EC2 to Public Subnet (if needed)
+      if: env.CURRENT_SUBNET_ID != env.PUBLIC_SUBNET_ID
       run: |
-        AMI_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].ImageId' --output text)
-        INSTANCE_TYPE=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].InstanceType' --output text)
-        KEY_NAME=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].KeyName' --output text)
-        SG_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
-        NEW_INSTANCE_ID=$(aws ec2 run-instances --image-id $AMI_ID --instance-type $INSTANCE_TYPE --key-name $KEY_NAME --security-group-ids $SG_ID --subnet-id ${{ env.PUBLIC_SUBNET_ID }} --query 'Instances[0].InstanceId' --output text)
-        echo "New Instance ID: $NEW_INSTANCE_ID"
-        echo "NEW_INSTANCE_ID=$NEW_INSTANCE_ID" >> $GITHUB_ENV
+        INSTANCE_AZ=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].Placement.AvailabilityZone' --output text)
+        echo "Instance Availability Zone: $INSTANCE_AZ"
+    
+        PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=${{ env.VPC_ID }}" "Name=availabilityZone,Values=$INSTANCE_AZ" "Name=map-public-ip-on-launch,Values=true" --query 'Subnets[0].SubnetId' --output text)
+        echo "Public Subnet ID in same AZ: $PUBLIC_SUBNET_ID"
+    
+        if [ "$PUBLIC_SUBNET_ID" == "None" ]; then
+          echo "Error: No public subnet found in the same AZ as the instance"
+          exit 1
+        fi
+    
+        INSTANCE_STATE=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].State.Name' --output text)
+        if [ "$INSTANCE_STATE" != "stopped" ]; then
+          aws ec2 stop-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+          echo "Waiting for instance to stop..."
+          aws ec2 wait instance-stopped --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+        fi
+    
+        NETWORK_INTERFACES=$(aws ec2 describe-network-interfaces --filters "Name=attachment.instance-id,Values=${{ secrets.EC2_INSTANCE_ID }}" --query 'NetworkInterfaces[*].{Id:NetworkInterfaceId,SubnetId:SubnetId,DeviceIndex:Attachment.DeviceIndex}')
+        echo "Existing Network Interfaces: $NETWORK_INTERFACES"
+    
+        PUBLIC_ENI_ID=$(echo "$NETWORK_INTERFACES" | jq -r '.[] | select(.SubnetId == "'$PUBLIC_SUBNET_ID'") | .Id')
+    
+        if [ -n "$PUBLIC_ENI_ID" ]; then
+          echo "Network interface in public subnet already exists: $PUBLIC_ENI_ID"
+        else
+          NEW_ENI_ID=$(aws ec2 create-network-interface --subnet-id $PUBLIC_SUBNET_ID --description "New public interface" --query 'NetworkInterface.NetworkInterfaceId' --output text)
+          echo "New Network Interface ID: $NEW_ENI_ID"
+    
+          SG_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
+    
+          aws ec2 modify-network-interface-attribute --network-interface-id $NEW_ENI_ID --groups $SG_ID
+    
+          AVAILABLE_INDEX=$(echo "$NETWORK_INTERFACES" | jq -r '[.[].DeviceIndex] | max + 1')
+    
+          ATTACHMENT_ID=$(aws ec2 attach-network-interface --network-interface-id $NEW_ENI_ID --instance-id ${{ secrets.EC2_INSTANCE_ID }} --device-index $AVAILABLE_INDEX --query 'AttachmentId' --output text)
+          echo "Attachment ID: $ATTACHMENT_ID"
+    
+          PUBLIC_ENI_ID=$NEW_ENI_ID
+        fi
+    
+        aws ec2 start-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+        echo "Waiting for instance to start..."
+        aws ec2 wait instance-running --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+    
+        ATTACHMENT_ID=$(aws ec2 describe-network-interfaces --network-interface-ids $PUBLIC_ENI_ID --query 'NetworkInterfaces[0].Attachment.AttachmentId' --output text)
+        aws ec2 modify-network-interface-attribute --network-interface-id $PUBLIC_ENI_ID --attachment "{\"AttachmentId\":\"$ATTACHMENT_ID\",\"DeleteOnTermination\":true}"
 
-    - name: Wait for new instance to be running
+    - name: Update Public IP
       run: |
-        aws ec2 wait instance-running --instance-ids ${{ env.NEW_INSTANCE_ID }}
-        NEW_PUBLIC_IP=$(aws ec2 describe-instances --instance-ids ${{ env.NEW_INSTANCE_ID }} --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+        NEW_PUBLIC_IP=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
         echo "New Public IP: $NEW_PUBLIC_IP"
         echo "EC2_PUBLIC_IP=$NEW_PUBLIC_IP" >> $GITHUB_ENV
 
-    - name: Terminate old EC2 instance
+    - name: Verify Instance Subnet
       run: |
-        aws ec2 terminate-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
-        echo "Waiting for old instance to terminate..."
-        aws ec2 wait instance-terminated --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+        INSTANCE_SUBNET_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SubnetId' --output text)
+        echo "Instance Subnet ID: $INSTANCE_SUBNET_ID"
+        echo "Public Subnet ID: ${{ env.PUBLIC_SUBNET_ID }}"
+        if [ "$INSTANCE_SUBNET_ID" != "${{ env.PUBLIC_SUBNET_ID }}" ]; then
+          echo "Error: Instance is not in the public subnet"
+          exit 1
+        fi
 
-    - name: Deploy to new EC2 instance
+    - name: Check VPC and Internet Gateway
+      run: |
+        echo "VPC ID: ${{ env.VPC_ID }}"
+        aws ec2 describe-vpcs --vpc-ids ${{ env.VPC_ID }} --query 'Vpcs[0].{CidrBlock:CidrBlock,State:State}'
+        echo "Checking Internet Gateway..."
+        aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=${{ env.VPC_ID }}" --query 'InternetGateways[*].{InternetGatewayId:InternetGatewayId,State:Attachments[0].State}'
+
+    - name: Check Security Group Inbound Rules
+      run: |
+        SG_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
+        aws ec2 describe-security-group-rules --filters Name="group-id",Values="$SG_ID" --query 'SecurityGroupRules[?!IsEgress]'
+    
+    - name: Ping Instance
+      run: |
+        ping -c 4 ${{ env.EC2_PUBLIC_IP }} || echo "Ping failed"
+
+    - name: Check SSM Session Manager
+      run: |
+        aws ssm start-session --target ${{ secrets.EC2_INSTANCE_ID }} --document-name AWS-StartInteractiveCommand --parameters command="echo SSM connection successful" || echo "SSM connection failed"
+
+    - name: Check Route Table
+      run: |
+        echo "Subnet ID: ${{ env.PUBLIC_SUBNET_ID }}"
+        aws ec2 describe-route-tables --filters "Name=association.subnet-id,Values=${{ env.PUBLIC_SUBNET_ID }}" --query 'RouteTables[*].Routes'
+
+    - name: Check Network Interface
+      run: |
+        aws ec2 describe-network-interfaces --filters "Name=attachment.instance-id,Values=${{ secrets.EC2_INSTANCE_ID }}" --query 'NetworkInterfaces[*].{SubnetId:SubnetId,PrivateIpAddress:PrivateIpAddress,PublicIp:Association.PublicIp,Status:Status}'
+
+    - name: Check Security Group Rules
+      run: |
+        SG_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
+        echo "Security Group ID: $SG_ID"
+        aws ec2 describe-security-group-rules --filters Name="group-id",Values="$SG_ID" --query 'SecurityGroupRules[?IpProtocol==`tcp` && FromPort==`22`]'
+
+    - name: Check Network ACL Rules
+      run: |
+        NACL_ID=$(aws ec2 describe-network-acls --filters Name=association.subnet-id,Values=${{ env.PUBLIC_SUBNET_ID }} --query 'NetworkAcls[0].NetworkAclId' --output text)
+        echo "Network ACL ID: $NACL_ID"
+        aws ec2 describe-network-acls --network-acl-ids $NACL_ID
+
+    - name: Test SSH Connection
+      continue-on-error: true  # This allows the workflow to continue even if this step fails
+      run: |
+        ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
+        aws ec2-instance-connect send-ssh-public-key --instance-id ${{ secrets.EC2_INSTANCE_ID }} --availability-zone ${{ env.AZ }} --instance-os-user ec2-user --ssh-public-key file://./id_rsa.pub
+        ssh -o StrictHostKeyChecking=no -i ./id_rsa ec2-user@${{ env.EC2_PUBLIC_IP }} "echo Connection successful"
+
+    - name: Deploy to EC2
       env:
         EC2_USER: ec2-user
-        EC2_PUBLIC_IP: ${{ env.EC2_PUBLIC_IP }}
       run: |
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > private_key.pem
-          chmod 600 private_key.pem
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ${EC2_USER}@${EC2_PUBLIC_IP} '
-            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest &&
-            docker stop dune-backend || true &&
-            docker rm dune-backend || true &&
-            docker run -d --name dune-backend -p 8000:8000 \
-              -e DB_NAME=${{ secrets.DB_NAME }} \
-              -e DB_USER=${{ secrets.DB_USER }} \
-              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-              -e DB_HOST=${{ secrets.DB_HOST }} \
-              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
-          '
-          rm private_key.pem
+        echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > private_key.pem
+        chmod 600 private_key.pem
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ${EC2_USER}@${{ env.EC2_PUBLIC_IP }} '
+          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest &&
+          docker stop dune-backend || true &&
+          docker rm dune-backend || true &&
+          docker run -d --name dune-backend -p 8000:8000 \
+            -e DB_NAME=${{ secrets.DB_NAME }} \
+            -e DB_USER=${{ secrets.DB_USER }} \
+            -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            -e DB_HOST=${{ secrets.DB_HOST }} \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
+        '
+        rm private_key.pem
 
     - name: Deploy using Systems Manager (Fallback)
       if: failure()
       run: |
-          aws ssm send-command \
-            --instance-ids ${{ env.NEW_INSTANCE_ID }} \
-            --document-name "AWS-RunShellScript" \
-            --parameters 'commands=[
-              "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest",
-              "docker stop dune-backend || true",
-              "docker rm dune-backend || true",
-              "docker run -d --name dune-backend -p 8000:8000 -e DB_NAME=${{ secrets.DB_NAME }} -e DB_USER=${{ secrets.DB_USER }} -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} -e DB_HOST=${{ secrets.DB_HOST }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest"
-            ]' \
-            --output text
+        aws ssm send-command \
+          --instance-ids ${{ secrets.EC2_INSTANCE_ID }} \
+          --document-name "AWS-RunShellScript" \
+          --parameters 'commands=[
+            "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest",
+            "docker stop dune-backend || true",
+            "docker rm dune-backend || true",
+            "docker run -d --name dune-backend -p 8000:8000 -e DB_NAME=${{ secrets.DB_NAME }} -e DB_USER=${{ secrets.DB_USER }} -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} -e DB_HOST=${{ secrets.DB_HOST }} ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest"
+          ]' \
+          --output text
