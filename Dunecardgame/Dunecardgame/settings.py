@@ -131,7 +131,7 @@ else:
             'NAME': os.environ.get('DB_NAME', 'dune_card_game'),
             'USER': os.environ.get('DB_USER', 'taylor'),
             'PASSWORD': os.environ.get('DB_PASSWORD', 'Emerica23#'),
-            'HOST': os.environ.get('DB_HOST', 'postgres-service'),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
             'PORT': os.environ.get('DB_PORT', '5432'),
         }
     }
