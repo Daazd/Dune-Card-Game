@@ -92,9 +92,15 @@ jobs:
 
     - name: Check Security Group Rules
       run: |
-        SG_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
-        echo "Security Group ID: $SG_ID"
-        aws ec2 describe-security-group-rules --filters Name="group-id",Values="$SG_ID" --query 'SecurityGroupRules[?IpProtocol==`tcp` && FromPort==`22`]
+            SG_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
+            echo "Security Group ID: $SG_ID"
+            aws ec2 describe-security-group-rules --filters Name="group-id",Values="$SG_ID" --query 'SecurityGroupRules[?IpProtocol==`tcp` && FromPort==`22`]'
+
+    - name: Check Public IP
+      run: |
+            PUBLIC_IP=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+            echo "Public IP: $PUBLIC_IP"
+            echo "EC2_PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
 
     - name: Check Network ACL Rules
       run: |
@@ -106,13 +112,21 @@ jobs:
 
     - name: Try EC2 Instance Connect
       run: |
-        aws ec2-instance-connect send-ssh-public-key \
-          --instance-id ${{ secrets.EC2_INSTANCE_ID }} \
-          --availability-zone ${{ env.EC2_AVAILABILITY_ZONE }} \
-          --instance-os-user ec2-user \
-          --ssh-public-key file://$HOME/.ssh/id_rsa.pub
-        ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/id_rsa ec2-user@${{ secrets.EC2_PUBLIC_IP }} "echo Connection successful"
-        
+          ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
+          aws ec2-instance-connect send-ssh-public-key \
+            --instance-id ${{ secrets.EC2_INSTANCE_ID }} \
+            --availability-zone ${{ env.EC2_AVAILABILITY_ZONE }} \
+            --instance-os-user ec2-user \
+            --ssh-public-key file://./id_rsa.pub
+          ssh -o StrictHostKeyChecking=no -i ./id_rsa ec2-user@${{ env.EC2_PUBLIC_IP }} "echo Connection successful"
+
+    - name: Check Instance Reachability
+      run: |
+            echo "Attempting to ping ${{ env.EC2_PUBLIC_IP }}..."
+            ping -c 4 ${{ env.EC2_PUBLIC_IP }}
+            echo "Attempting to telnet to port 22..."
+            timeout 5 telnet ${{ env.EC2_PUBLIC_IP }} 22
+            
     - name: Deploy to EC2
       env:
         EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
