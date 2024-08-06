@@ -40,8 +40,8 @@ jobs:
           echo "Latest Docker solution stack: $SOLUTION_STACK"
           echo "SOLUTION_STACK=$SOLUTION_STACK" >> $GITHUB_ENV
 
-    - name: Check, terminate, and recreate Elastic Beanstalk environment
-      run: |
+          - name: Check, terminate, and recreate Elastic Beanstalk environment
+          run: |
             echo "Terminating existing environment..."
             aws elasticbeanstalk terminate-environment --environment-name Dune-backend-env || true
             
@@ -65,19 +65,36 @@ jobs:
               --option-settings file://eb-options.json
             
             echo "Waiting for new environment to be ready..."
-            while true; do
-              STATUS=$(aws elasticbeanstalk describe-environments --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
-              if [ "$STATUS" = "Ready" ]; then
-                echo "New environment is ready"
+            TIMEOUT=1800  # 30 minutes timeout
+            INTERVAL=60   # Check every 60 seconds
+            ELAPSED=0
+            while [ $ELAPSED -lt $TIMEOUT ]; do
+              ENV_INFO=$(aws elasticbeanstalk describe-environments --environment-names Dune-backend-env --query "Environments[0]")
+              STATUS=$(echo $ENV_INFO | jq -r '.Status')
+              HEALTH=$(echo $ENV_INFO | jq -r '.Health')
+              echo "Environment Status: $STATUS, Health: $HEALTH"
+              
+              if [ "$STATUS" = "Ready" ] && [ "$HEALTH" = "Green" ]; then
+                echo "New environment is ready and healthy"
                 break
               elif [ "$STATUS" = "Terminated" ]; then
                 echo "Environment creation failed. Cannot proceed."
+                echo "Full environment info:"
+                echo $ENV_INFO | jq '.'
                 exit 1
               else
-                echo "Environment is $STATUS. Waiting..."
-                sleep 30
+                echo "Environment is still $STATUS. Waiting..."
+                sleep $INTERVAL
+                ELAPSED=$((ELAPSED + INTERVAL))
               fi
             done
+            
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "Timeout reached. Environment creation did not complete in time."
+              echo "Full environment info:"
+              aws elasticbeanstalk describe-environments --environment-names Dune-backend-env | jq '.'
+              exit 1
+            fi
       
     - name: Deploy to Elastic Beanstalk
       uses: einaregilsson/beanstalk-deploy@v21
