@@ -1,11 +1,12 @@
 import axios from 'axios';
 
-export const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
-export const MEDIA_URL = process.env.REACT_APP_MEDIA_URL || '/media/';
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://dune-backen.onrender.com/api';
+export const MEDIA_URL = process.env.REACT_APP_MEDIA_URL || 'https://dune-backen.onrender.com/media/';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 5000, // Increased timeout to 5000ms or 5 seconds
+  withCredentials: true,
 });
 
 console.log('API_BASE_URL:', API_BASE_URL);
