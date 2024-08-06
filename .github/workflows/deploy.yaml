@@ -165,7 +165,8 @@ jobs:
         
             ASSOCIATION_ID=$(aws ec2 describe-network-interfaces --network-interface-ids $PUBLIC_ENI_ID --query 'NetworkInterfaces[0].Association.AssociationId' --output text)
             if [ "$ASSOCIATION_ID" == "None" ]; then
-              aws ec2 associate-address --network-interface-id $PUBLIC_ENI_ID --allocation-id $(aws ec2 allocate-address --query 'AllocationId' --output text)
+              ALLOCATION_ID=$(aws ec2 allocate-address --query 'AllocationId' --output text)
+              aws ec2 associate-address --network-interface-id $PUBLIC_ENI_ID --allocation-id $ALLOCATION_ID
             else
               aws ec2 modify-network-interface-attribute --network-interface-id $PUBLIC_ENI_ID --attachment "{\"AttachmentId\":\"$ATTACHMENT_ID\",\"DeleteOnTermination\":true}"
             fi
@@ -176,10 +177,6 @@ jobs:
         
             ATTACHMENT_ID=$(aws ec2 describe-network-interfaces --network-interface-ids $PUBLIC_ENI_ID --query 'NetworkInterfaces[0].Attachment.AttachmentId' --output text)
             aws ec2 modify-network-interface-attribute --network-interface-id $PUBLIC_ENI_ID --attachment "{\"AttachmentId\":\"$ATTACHMENT_ID\",\"DeleteOnTermination\":true}"
-  
-      
-      
-      
       
     - name: Update Public IP
       run: |
