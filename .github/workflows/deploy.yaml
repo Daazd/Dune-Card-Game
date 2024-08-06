@@ -40,8 +40,8 @@ jobs:
           echo "Latest Docker solution stack: $SOLUTION_STACK"
           echo "SOLUTION_STACK=$SOLUTION_STACK" >> $GITHUB_ENV
 
-          - name: Check, terminate, and recreate Elastic Beanstalk environment
-          run: |
+    - name: Check, terminate, and recreate Elastic Beanstalk environment
+      run: |
             echo "Terminating existing environment..."
             aws elasticbeanstalk terminate-environment --environment-name Dune-backend-env || true
             
