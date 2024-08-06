@@ -34,8 +34,8 @@ jobs:
         docker tag dune-cf-backend:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/dune-cf-backend:latest
         docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/dune-cf-backend:latest
 
-        - name: Check and terminate existing environment if necessary
-        run: |
+    - name: Check and terminate existing environment if necessary
+      run: |
           ENV_STATUS=$(aws elasticbeanstalk describe-environments --application-name dune-backend --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
           if [ "$ENV_STATUS" != "Ready" ] && [ "$ENV_STATUS" != "Terminated" ] && [ "$ENV_STATUS" != "None" ]; then
             echo "Environment is in $ENV_STATUS state. Terminating..."
