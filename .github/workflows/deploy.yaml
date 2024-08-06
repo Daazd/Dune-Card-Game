@@ -84,6 +84,24 @@ jobs:
       run: |
         aws ec2 describe-instance-status --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'InstanceStatuses[0].InstanceState.Name' --output text
 
+    - name: Check VPC and Internet Gateway
+      run: |
+        VPC_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].VpcId' --output text)
+        echo "VPC ID: $VPC_ID"
+        aws ec2 describe-vpcs --vpc-ids $VPC_ID --query 'Vpcs[0].{CidrBlock:CidrBlock,State:State}'
+        echo "Checking Internet Gateway..."
+        aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=$VPC_ID" --query 'InternetGateways[*].{InternetGatewayId:InternetGatewayId,State:Attachments[0].State}'
+
+    - name: Check Route Table
+      run: |
+          SUBNET_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SubnetId' --output text)
+          echo "Subnet ID: $SUBNET_ID"
+          aws ec2 describe-route-tables --filters "Name=association.subnet-id,Values=$SUBNET_ID" --query 'RouteTables[*].Routes'
+
+    - name: Check Network Interface
+      run: |
+        aws ec2 describe-network-interfaces --filters "Name=attachment.instance-id,Values=${{ secrets.EC2_INSTANCE_ID }}" --query 'NetworkInterfaces[*].{SubnetId:SubnetId,PrivateIpAddress:PrivateIpAddress,PublicIp:Association.PublicIp,Status:Status}'
+
     - name: Get EC2 Instance Availability Zone
       run: |
           AZ=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].Placement.AvailabilityZone' --output text)
@@ -126,7 +144,7 @@ jobs:
             ping -c 4 ${{ env.EC2_PUBLIC_IP }}
             echo "Attempting to telnet to port 22..."
             timeout 5 telnet ${{ env.EC2_PUBLIC_IP }} 22
-            
+
     - name: Deploy to EC2
       env:
         EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
