@@ -87,6 +87,9 @@ jobs:
     - name: Generate SSH key
       run: |
           ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
+
+    - name: Set permissions for SSH key
+      run: chmod 600 ./id_rsa
   
     - name: Start SSH Agent and Add Key
       run: |
@@ -95,10 +98,9 @@ jobs:
   
     - name: Debug SSH Connection
       run: |
-          chmod 600 ./id_rsa
-          ssh -vvv -o StrictHostKeyChecking=no -i ./id_rsa ec2-user@$EC2_PUBLIC_IP "echo 'SSH connection successful'"
+        ssh -vvv -o StrictHostKeyChecking=no -i ./id_rsa ec2-user@$EC2_PUBLIC_IP "echo 'SSH connection successful'"
       env:
-          EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
+        EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
 
     - name: Check VPC and Internet Gateway
       run: |
