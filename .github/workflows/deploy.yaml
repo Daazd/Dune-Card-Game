@@ -84,15 +84,11 @@ jobs:
       run: |
         aws ec2 describe-instance-status --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'InstanceStatuses[0].InstanceState.Name' --output text
     
-    - name: Generate SSH key with correct permissions
+    - name: Generate SSH key and set permissions
       run: |
-          (
-            umask 077
-            ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
-          )
-  
-    - name: Verify permissions for SSH key
-      run: ls -l ./id_rsa
+        ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
+        chmod 600 ./id_rsa
+        ls -l ./id_rsa
   
     - name: Start SSH Agent and Add Key
       run: |
