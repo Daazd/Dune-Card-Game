@@ -1,0 +1,1 @@
+web: gunicorn Dunecardgame.wsgi:application

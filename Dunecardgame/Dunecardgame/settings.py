@@ -25,6 +25,9 @@ print(f"Contents of current directory: {os.listdir('.')}")
 print(f"Contents of parent directory: {os.listdir('..')}")
 print(f"Python path before modification: {sys.path}")
 
+SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key')
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
 sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR / 'gameapp'))

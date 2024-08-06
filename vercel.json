@@ -1,0 +1,11 @@
+{
+    "buildCommand": "cd Dune-Front-End && npm install && npm run build",
+    "outputDirectory": "Dune-Front-End/dist",
+    "framework": "vite",
+    "rewrites": [
+      {
+        "source": "/(.*)",
+        "destination": "/index.html"
+      }
+    ]
+  }
