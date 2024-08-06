@@ -42,7 +42,7 @@ SECRET_KEY = 'django-insecure-uj2ek4155pt0-6=9y=kh+@3bp88qtb=vu&@o1rvo^9$w1n$-&7
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'dune-backend-nodeport', 'dune-backend-service', '66.175.217.167', '66.175.217.154', '66.175.217.145', '45.79.231.182', 'https://dune-backen.onrender.com']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'dune-backend-nodeport', 'dune-backend-service', '66.175.217.167', '66.175.217.154', '66.175.217.145', '45.79.231.182', 'dune-backen.onrender.com']
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'gameapp', 'media')
@@ -128,14 +128,13 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME', 'dune_card_game'),
-            'USER': os.environ.get('DB_USER', 'taylor'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', 'Emerica23#'),
-            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'NAME': os.environ.get('DB_NAME', 'dune_card_game_db'),
+            'USER': os.environ.get('DB_USER', 'dune_card_game_db_user'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'jwt0bYSWsdpWYhhLBl3oL9fwlPJ5pLHm'),
+            'HOST': os.environ.get('DB_HOST', 'dpg-cqp7vu8gph6c73fiu6e0-a.ohio-postgres.render.com'),
             'PORT': os.environ.get('DB_PORT', '5432'),
         }
     }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -177,8 +176,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://66.175.217.154:30133',
     'http://66.175.217.145:30133',
     'http://45.79.231.182',
-    'https://dune-card-game.vercel.app'
-    
+    'https://dune-card-game.vercel.app',
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True  # For development only, be more restrictive in production
