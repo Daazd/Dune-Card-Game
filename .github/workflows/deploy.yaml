@@ -170,10 +170,15 @@ jobs:
             ATTACHMENT_ID=$(aws ec2 attach-network-interface --network-interface-id $NEW_ENI_ID --instance-id ${{ secrets.EC2_INSTANCE_ID }} --device-index $AVAILABLE_INDEX --query 'AttachmentId' --output text)
             echo "Attachment ID: $ATTACHMENT_ID"
       
-            # Modify instance attribute to use the new network interface as primary
-            aws ec2 modify-instance-attribute --instance-id ${{ secrets.EC2_INSTANCE_ID }} --attachment "{\"AttachmentId\":\"$ATTACHMENT_ID\",\"DeleteOnTermination\":true}"
-      
             PUBLIC_ENI_ID=$NEW_ENI_ID
+          fi
+      
+          # Ensure the public ENI has a public IP
+          ASSOCIATION_ID=$(aws ec2 describe-network-interfaces --network-interface-ids $PUBLIC_ENI_ID --query 'NetworkInterfaces[0].Association.AssociationId' --output text)
+          if [ "$ASSOCIATION_ID" == "None" ]; then
+            aws ec2 associate-address --network-interface-id $PUBLIC_ENI_ID --allow-reassociation
+          else
+            aws ec2 modify-network-interface-attribute --network-interface-id $PUBLIC_ENI_ID --association-attribute "{\"AssociationId\":\"$ASSOCIATION_ID\",\"AllowReassociation\":true}"
           fi
       
           # Start the instance
@@ -181,17 +186,10 @@ jobs:
           echo "Waiting for instance to start..."
           aws ec2 wait instance-running --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
       
-          # Ensure the public ENI is the primary network interface
-          aws ec2 modify-network-interface-attribute --network-interface-id $PUBLIC_ENI_ID --attachment AttachmentId=$(aws ec2 describe-network-interfaces --network-interface-ids $PUBLIC_ENI_ID --query 'NetworkInterfaces[0].Attachment.AttachmentId' --output text),DeleteOnTermination=true
-          aws ec2 modify-instance-attribute --instance-id ${{ secrets.EC2_INSTANCE_ID }} --network-interface "{\"DeviceIndex\": 0, \"NetworkInterfaceId\": \"$PUBLIC_ENI_ID\"}"
+          # Ensure the public ENI is attached with delete on termination set to true
+          ATTACHMENT_ID=$(aws ec2 describe-network-interfaces --network-interface-ids $PUBLIC_ENI_ID --query 'NetworkInterfaces[0].Attachment.AttachmentId' --output text)
+          aws ec2 modify-network-interface-attribute --network-interface-id $PUBLIC_ENI_ID --attachment "{\"AttachmentId\":\"$ATTACHMENT_ID\",\"DeleteOnTermination\":true}"
       
-          # Remove other network interfaces
-          for ENI in $(echo "$NETWORK_INTERFACES" | jq -r '.[].Id'); do
-            if [ "$ENI" != "$PUBLIC_ENI_ID" ]; then
-              aws ec2 detach-network-interface --attachment-id $(aws ec2 describe-network-interfaces --network-interface-ids $ENI --query 'NetworkInterfaces[0].Attachment.AttachmentId' --output text)
-              aws ec2 delete-network-interface --network-interface-id $ENI
-            fi
-          done
       
     - name: Update Public IP
       run: |
