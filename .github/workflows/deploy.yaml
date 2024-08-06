@@ -145,21 +145,22 @@ jobs:
     - name: Deploy to new EC2 instance
       env:
         EC2_USER: ec2-user
+        EC2_PUBLIC_IP: ${{ env.EC2_PUBLIC_IP }}
       run: |
-        echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > private_key.pem
-        chmod 600 private_key.pem
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ${EC2_USER}@${{ env.EC2_PUBLIC_IP }} '
-          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest &&
-          docker stop dune-backend || true &&
-          docker rm dune-backend || true &&
-          docker run -d --name dune-backend -p 8000:8000 \
-            -e DB_NAME=${{ secrets.DB_NAME }} \
-            -e DB_USER=${{ secrets.DB_USER }} \
-            -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-            -e DB_HOST=${{ secrets.DB_HOST }} \
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
-        '
-        rm private_key.pem
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${EC2_USER}@${EC2_PUBLIC_IP} '
+            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest &&
+            docker stop dune-backend || true &&
+            docker rm dune-backend || true &&
+            docker run -d --name dune-backend -p 8000:8000 \
+              -e DB_NAME=${{ secrets.DB_NAME }} \
+              -e DB_USER=${{ secrets.DB_USER }} \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e DB_HOST=${{ secrets.DB_HOST }} \
+              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest
+          '
+          rm private_key.pem
 
     - name: Deploy using Systems Manager (Fallback)
       if: failure()
