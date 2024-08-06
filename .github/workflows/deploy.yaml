@@ -83,14 +83,20 @@ jobs:
 
     - name: Get VPC and Subnet Info
       run: |
-        VPC_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].VpcId' --output text)
+        echo "Fetching instance details for debugging..."
+        INSTANCE_DETAILS=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --output json)
+        echo "$INSTANCE_DETAILS"
+    
+        VPC_ID=$(echo "$INSTANCE_DETAILS" | jq -r '.Reservations[0].Instances[0].VpcId')
+        echo "VPC ID: $VPC_ID"
+    
         if [ "$VPC_ID" == "None" ]; then
           echo "Error: VPC ID is None"
           exit 1
         fi
-        CURRENT_SUBNET_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SubnetId' --output text)
-        AZ=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].Placement.AvailabilityZone' --output text)
-        echo "VPC ID: $VPC_ID"
+    
+        CURRENT_SUBNET_ID=$(echo "$INSTANCE_DETAILS" | jq -r '.Reservations[0].Instances[0].SubnetId')
+        AZ=$(echo "$INSTANCE_DETAILS" | jq -r '.Reservations[0].Instances[0].Placement.AvailabilityZone')
         echo "Current Subnet ID: $CURRENT_SUBNET_ID"
         echo "Availability Zone: $AZ"
         echo "VPC_ID=$VPC_ID" >> $GITHUB_ENV
