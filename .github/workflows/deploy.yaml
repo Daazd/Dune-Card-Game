@@ -36,9 +36,10 @@ jobs:
 
     - name: Generate Elastic Beanstalk version
       run: |
-        VERSION_LABEL="ver-${{ github.sha }}"
-        echo "VERSION_LABEL=$VERSION_LABEL" >> $GITHUB_ENV
-        zip -r "${VERSION_LABEL}.zip" Dunecardgame/* .ebextensions/* Dockerrun.aws.json
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          VERSION_LABEL="ver-${{ github.sha }}-$TIMESTAMP"
+          echo "VERSION_LABEL=$VERSION_LABEL" >> $GITHUB_ENV
+          zip -r "${VERSION_LABEL}.zip" Dunecardgame/* .ebextensions/* Dockerrun.aws.json
 
     - name: Deploy to Elastic Beanstalk
       uses: einaregilsson/beanstalk-deploy@v21
