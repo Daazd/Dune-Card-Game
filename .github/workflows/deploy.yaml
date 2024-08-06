@@ -84,23 +84,51 @@ jobs:
     - name: Check EC2 instance state
       run: |
         aws ec2 describe-instance-status --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'InstanceStatuses[0].InstanceState.Name' --output text
-    
-    - name: Generate SSH key and set permissions
+
+    - name: Create Public Subnet
+      run: |
+        VPC_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].VpcId' --output text)
+        IGW_ID=$(aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=$VPC_ID" --query 'InternetGateways[0].InternetGatewayId' --output text)
+        SUBNET_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.1.0/24 --availability-zone ${{ env.EC2_AVAILABILITY_ZONE }} --query 'Subnet.SubnetId' --output text)
+        echo "New Subnet ID: $SUBNET_ID"
+        
+        # Create a new route table
+        RT_ID=$(aws ec2 create-route-table --vpc-id $VPC_ID --query 'RouteTable.RouteTableId' --output text)
+        echo "New Route Table ID: $RT_ID"
+        
+        # Add route to Internet Gateway
+        aws ec2 create-route --route-table-id $RT_ID --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
+        
+        # Associate the route table with the new subnet
+        aws ec2 associate-route-table --subnet-id $SUBNET_ID --route-table-id $RT_ID
+        
+        # Enable auto-assign public IP for the subnet
+        aws ec2 modify-subnet-attribute --subnet-id $SUBNET_ID --map-public-ip-on-launch
+
+    - name: Update Public IP
+      run: |
+          NEW_PUBLIC_IP=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+          echo "New Public IP: $NEW_PUBLIC_IP"
+          echo "EC2_PUBLIC_IP=$NEW_PUBLIC_IP" >> $GITHUB_ENV
+
+    - name: Test SSH Connection
       run: |
         ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
-        chmod 600 ./id_rsa
-        ls -l ./id_rsa
-  
-    - name: Start SSH Agent and Add Key
+        aws ec2-instance-connect send-ssh-public-key --instance-id ${{ secrets.EC2_INSTANCE_ID }} --availability-zone ${{ env.EC2_AVAILABILITY_ZONE }} --instance-os-user ec2-user --ssh-public-key file://./id_rsa.pub
+        ssh -o StrictHostKeyChecking=no -i ./id_rsa ec2-user@${{ env.EC2_PUBLIC_IP }} "echo Connection successful"
+
+    - name: Move EC2 to Public Subnet
       run: |
-          eval $(ssh-agent -s)
-          ssh-add ./id_rsa
-  
-    - name: Debug SSH Connection
-      run: |
-        ssh -vvv -o StrictHostKeyChecking=no -i ./id_rsa ec2-user@$EC2_PUBLIC_IP "echo 'SSH connection successful'"
-      env:
-        EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
+        aws ec2 stop-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+        echo "Waiting for instance to stop..."
+        aws ec2 wait instance-stopped --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+        
+        aws ec2 modify-instance-attribute --instance-id ${{ secrets.EC2_INSTANCE_ID }} --attribute subnet-id --value $SUBNET_ID
+        
+        aws ec2 start-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+        echo "Waiting for instance to start..."
+        aws ec2 wait instance-running --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+
 
     - name: Check VPC and Internet Gateway
       run: |
