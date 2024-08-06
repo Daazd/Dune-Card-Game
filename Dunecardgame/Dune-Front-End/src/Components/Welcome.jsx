@@ -51,8 +51,8 @@ const Welcome = ({ setAuthToken, setIsAdmin, authToken, isAdmin }) => {
   };
 
   const handleAdminClick = () => {
-    window.location.href = `${window.location.protocol}//${window.location.hostname}/admin/`;
-  };
+    window.location.href = 'https://dune-backen.onrender.com/admin/';
+};
 
   return (
     <Box
