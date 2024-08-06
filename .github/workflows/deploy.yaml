@@ -34,28 +34,78 @@ jobs:
         docker tag dune-cf-backend:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/dune-cf-backend:latest
         docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/dune-cf-backend:latest
 
-    - name: Check and terminate existing environment if necessary
+    - name: Check and update Elastic Beanstalk environment
       run: |
-          ENV_STATUS=$(aws elasticbeanstalk describe-environments --application-name dune-backend --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
-          if [ "$ENV_STATUS" != "Ready" ] && [ "$ENV_STATUS" != "Terminated" ] && [ "$ENV_STATUS" != "None" ]; then
-            echo "Environment is in $ENV_STATUS state. Terminating..."
-            aws elasticbeanstalk terminate-environment --environment-name Dune-backend-env
-            echo "Waiting for environment to terminate..."
-            while true; do
-              STATUS=$(aws elasticbeanstalk describe-environments --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
-              if [ "$STATUS" = "Terminated" ] || [ "$STATUS" = "None" ]; then
-                echo "Environment terminated"
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            ENV_STATUS=$(aws elasticbeanstalk describe-environments --application-name dune-backend --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
+            echo "Current environment status: $ENV_STATUS"
+            
+            if [ "$ENV_STATUS" = "Ready" ]; then
+              echo "Environment is ready. Proceeding with update..."
+              if aws elasticbeanstalk update-environment \
+                --environment-name Dune-backend-env \
+                --solution-stack-name "${{ env.SOLUTION_STACK }}" \
+                --option-settings file://eb-options.json; then
+                echo "Environment update initiated successfully."
                 break
               else
-                echo "Environment is $STATUS. Waiting..."
-                sleep 30
+                echo "Failed to update environment. Retrying..."
+                RETRY_COUNT=$((RETRY_COUNT+1))
+                sleep 60
               fi
-            done
-          elif [ "$ENV_STATUS" = "Ready" ]; then
-            echo "Environment is ready. No need to terminate."
-          else
-            echo "Environment does not exist or is already terminated."
+            elif [ "$ENV_STATUS" = "Updating" ]; then
+              echo "Environment is currently updating. Waiting..."
+              sleep 60
+            else
+              echo "Environment is in $ENV_STATUS state. Attempting to terminate..."
+              aws elasticbeanstalk terminate-environment --environment-name Dune-backend-env
+              echo "Waiting for environment to terminate..."
+              while true; do
+                STATUS=$(aws elasticbeanstalk describe-environments --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
+                if [ "$STATUS" = "Terminated" ] || [ "$STATUS" = "None" ]; then
+                  echo "Environment terminated. Creating new environment..."
+                  if aws elasticbeanstalk create-environment \
+                    --application-name dune-backend \
+                    --environment-name Dune-backend-env \
+                    --solution-stack-name "${{ env.SOLUTION_STACK }}" \
+                    --option-settings file://eb-options.json; then
+                    echo "New environment created successfully."
+                    break 2  # Break out of both loops
+                  else
+                    echo "Failed to create new environment. Retrying..."
+                    RETRY_COUNT=$((RETRY_COUNT+1))
+                    sleep 60
+                  fi
+                else
+                  echo "Environment is $STATUS. Waiting..."
+                  sleep 30
+                fi
+              done
+            fi
+          done
+          
+          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+            echo "Max retries reached. Failed to update or create environment."
+            exit 1
           fi
+          
+          echo "Waiting for environment to be ready..."
+          while true; do
+            STATUS=$(aws elasticbeanstalk describe-environments --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
+            if [ "$STATUS" = "Ready" ]; then
+              echo "Environment is ready"
+              break
+            elif [ "$STATUS" = "Terminated" ]; then
+              echo "Environment update/creation failed. Cannot proceed."
+              exit 1
+            else
+              echo "Environment is $STATUS. Waiting..."
+              sleep 30
+            fi
+          done
       
     - name: Create or update Elastic Beanstalk environment
       run: |
