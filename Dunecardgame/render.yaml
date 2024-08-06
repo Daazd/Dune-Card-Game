@@ -4,7 +4,8 @@ services:
     env: python
     buildCommand: |
       pip install -r requirements.txt
-      python manage.py initialize_db
+      python manage.py initialize_db 
+      python manage.py collectstatic --noinput
     startCommand: gunicorn Dunecardgame.wsgi:application
     envVars:
       - key: DATABASE_URL
