@@ -118,17 +118,23 @@ WSGI_APPLICATION = 'Dunecardgame.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'dune_card_game'),
-        'USER': os.environ.get('DB_USER', 'taylor'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'Emerica23#'),
-        'HOST': os.environ.get('DB_HOST', 'postgres-service'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'dune_card_game'),
+            'USER': os.environ.get('DB_USER', 'taylor'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'Emerica23#'),
+            'HOST': os.environ.get('DB_HOST', 'postgres-service'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
+    }
 
 
 # Password validation
