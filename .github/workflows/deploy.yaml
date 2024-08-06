@@ -143,35 +143,55 @@ jobs:
             aws ec2 wait instance-stopped --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
           fi
       
-          # Create a new network interface in the public subnet
-          NEW_ENI_ID=$(aws ec2 create-network-interface --subnet-id $PUBLIC_SUBNET_ID --description "New public interface" --query 'NetworkInterface.NetworkInterfaceId' --output text)
-          echo "New Network Interface ID: $NEW_ENI_ID"
+          # Get existing network interfaces
+          NETWORK_INTERFACES=$(aws ec2 describe-network-interfaces --filters "Name=attachment.instance-id,Values=${{ secrets.EC2_INSTANCE_ID }}" --query 'NetworkInterfaces[*].{Id:NetworkInterfaceId,SubnetId:SubnetId,DeviceIndex:Attachment.DeviceIndex}')
+          echo "Existing Network Interfaces: $NETWORK_INTERFACES"
       
-          # Get the security group ID
-          SG_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
+          # Check if there's already an interface in the public subnet
+          PUBLIC_ENI_ID=$(echo "$NETWORK_INTERFACES" | jq -r '.[] | select(.SubnetId == "'$PUBLIC_SUBNET_ID'") | .Id')
       
-          # Attach the security group to the new network interface
-          aws ec2 modify-network-interface-attribute --network-interface-id $NEW_ENI_ID --groups $SG_ID
+          if [ -n "$PUBLIC_ENI_ID" ]; then
+            echo "Network interface in public subnet already exists: $PUBLIC_ENI_ID"
+          else
+            # Create a new network interface in the public subnet
+            NEW_ENI_ID=$(aws ec2 create-network-interface --subnet-id $PUBLIC_SUBNET_ID --description "New public interface" --query 'NetworkInterface.NetworkInterfaceId' --output text)
+            echo "New Network Interface ID: $NEW_ENI_ID"
       
-          # Attach the new network interface to the instance
-          ATTACHMENT_ID=$(aws ec2 attach-network-interface --network-interface-id $NEW_ENI_ID --instance-id ${{ secrets.EC2_INSTANCE_ID }} --device-index 1 --query 'AttachmentId' --output text)
-          echo "Attachment ID: $ATTACHMENT_ID"
+            # Get the security group ID
+            SG_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
       
-          # Modify instance attribute to use the new network interface as primary
-          aws ec2 modify-instance-attribute --instance-id ${{ secrets.EC2_INSTANCE_ID }} --attachment "{\"AttachmentId\":\"$ATTACHMENT_ID\",\"DeleteOnTermination\":true}"
+            # Attach the security group to the new network interface
+            aws ec2 modify-network-interface-attribute --network-interface-id $NEW_ENI_ID --groups $SG_ID
+      
+            # Find the first available device index
+            AVAILABLE_INDEX=$(echo "$NETWORK_INTERFACES" | jq -r '[.[].DeviceIndex] | max + 1')
+      
+            # Attach the new network interface to the instance
+            ATTACHMENT_ID=$(aws ec2 attach-network-interface --network-interface-id $NEW_ENI_ID --instance-id ${{ secrets.EC2_INSTANCE_ID }} --device-index $AVAILABLE_INDEX --query 'AttachmentId' --output text)
+            echo "Attachment ID: $ATTACHMENT_ID"
+      
+            # Modify instance attribute to use the new network interface as primary
+            aws ec2 modify-instance-attribute --instance-id ${{ secrets.EC2_INSTANCE_ID }} --attachment "{\"AttachmentId\":\"$ATTACHMENT_ID\",\"DeleteOnTermination\":true}"
+      
+            PUBLIC_ENI_ID=$NEW_ENI_ID
+          fi
       
           # Start the instance
           aws ec2 start-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
           echo "Waiting for instance to start..."
           aws ec2 wait instance-running --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
       
-          # Get the old network interface ID
-          OLD_ENI_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].NetworkInterfaces[?Attachment.DeviceIndex==`0`].NetworkInterfaceId' --output text)
+          # Ensure the public ENI is the primary network interface
+          aws ec2 modify-network-interface-attribute --network-interface-id $PUBLIC_ENI_ID --attachment AttachmentId=$(aws ec2 describe-network-interfaces --network-interface-ids $PUBLIC_ENI_ID --query 'NetworkInterfaces[0].Attachment.AttachmentId' --output text),DeleteOnTermination=true
+          aws ec2 modify-instance-attribute --instance-id ${{ secrets.EC2_INSTANCE_ID }} --network-interface "{\"DeviceIndex\": 0, \"NetworkInterfaceId\": \"$PUBLIC_ENI_ID\"}"
       
-          # Detach and delete the old network interface
-          OLD_ATTACHMENT_ID=$(aws ec2 describe-network-interfaces --network-interface-ids $OLD_ENI_ID --query 'NetworkInterfaces[0].Attachment.AttachmentId' --output text)
-          aws ec2 detach-network-interface --attachment-id $OLD_ATTACHMENT_ID
-          aws ec2 delete-network-interface --network-interface-id $OLD_ENI_ID
+          # Remove other network interfaces
+          for ENI in $(echo "$NETWORK_INTERFACES" | jq -r '.[].Id'); do
+            if [ "$ENI" != "$PUBLIC_ENI_ID" ]; then
+              aws ec2 detach-network-interface --attachment-id $(aws ec2 describe-network-interfaces --network-interface-ids $ENI --query 'NetworkInterfaces[0].Attachment.AttachmentId' --output text)
+              aws ec2 delete-network-interface --network-interface-id $ENI
+            fi
+          done
       
     - name: Update Public IP
       run: |
