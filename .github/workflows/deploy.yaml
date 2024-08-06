@@ -34,99 +34,37 @@ jobs:
         docker tag dune-cf-backend:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/dune-cf-backend:latest
         docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/dune-cf-backend:latest
 
-    - name: Check and update Elastic Beanstalk environment
+    - name: Get latest Docker solution stack
       run: |
-          MAX_RETRIES=5
-          RETRY_COUNT=0
-          
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          SOLUTION_STACK=$(aws elasticbeanstalk list-available-solution-stacks --query "SolutionStacks[?contains(@, 'running Docker')]|[0]" --output text)
+          echo "Latest Docker solution stack: $SOLUTION_STACK"
+          echo "SOLUTION_STACK=$SOLUTION_STACK" >> $GITHUB_ENV
+
+    - name: Check if Elastic Beanstalk environment exists
+      run: |
             ENV_STATUS=$(aws elasticbeanstalk describe-environments --application-name dune-backend --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
-            echo "Current environment status: $ENV_STATUS"
-            
-            if [ "$ENV_STATUS" = "Ready" ]; then
-              echo "Environment is ready. Proceeding with update..."
-              if aws elasticbeanstalk update-environment \
-                --environment-name Dune-backend-env \
-                --solution-stack-name "${{ env.SOLUTION_STACK }}" \
-                --option-settings file://eb-options.json; then
-                echo "Environment update initiated successfully."
-                break
-              else
-                echo "Failed to update environment. Retrying..."
-                RETRY_COUNT=$((RETRY_COUNT+1))
-                sleep 60
-              fi
-            elif [ "$ENV_STATUS" = "Updating" ]; then
-              echo "Environment is currently updating. Waiting..."
-              sleep 60
-            else
-              echo "Environment is in $ENV_STATUS state. Attempting to terminate..."
-              aws elasticbeanstalk terminate-environment --environment-name Dune-backend-env
-              echo "Waiting for environment to terminate..."
-              while true; do
-                STATUS=$(aws elasticbeanstalk describe-environments --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
-                if [ "$STATUS" = "Terminated" ] || [ "$STATUS" = "None" ]; then
-                  echo "Environment terminated. Creating new environment..."
-                  if aws elasticbeanstalk create-environment \
-                    --application-name dune-backend \
-                    --environment-name Dune-backend-env \
-                    --solution-stack-name "${{ env.SOLUTION_STACK }}" \
-                    --option-settings file://eb-options.json; then
-                    echo "New environment created successfully."
-                    break 2  # Break out of both loops
-                  else
-                    echo "Failed to create new environment. Retrying..."
-                    RETRY_COUNT=$((RETRY_COUNT+1))
-                    sleep 60
-                  fi
-                else
-                  echo "Environment is $STATUS. Waiting..."
-                  sleep 30
-                fi
-              done
-            fi
-          done
-          
-          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-            echo "Max retries reached. Failed to update or create environment."
-            exit 1
-          fi
-          
-          echo "Waiting for environment to be ready..."
-          while true; do
-            STATUS=$(aws elasticbeanstalk describe-environments --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
-            if [ "$STATUS" = "Ready" ]; then
-              echo "Environment is ready"
-              break
-            elif [ "$STATUS" = "Terminated" ]; then
-              echo "Environment update/creation failed. Cannot proceed."
-              exit 1
-            else
-              echo "Environment is $STATUS. Waiting..."
-              sleep 30
-            fi
-          done
+            echo "ENV_STATUS=$ENV_STATUS" >> $GITHUB_ENV
       
     - name: Create or update Elastic Beanstalk environment
       run: |
             if [ "${{ env.ENV_STATUS }}" = "None" ]; then
               echo "Creating new environment..."
               aws elasticbeanstalk create-environment \
-                --application-name dune-backend \
-                --environment-name Dune-backend-env \
+                --application-name dune-backend2 \
+                --environment-name Dune-backend2-env \
                 --solution-stack-name "${{ env.SOLUTION_STACK }}" \
                 --option-settings file://eb-options.json
             else
               echo "Updating existing environment..."
               aws elasticbeanstalk update-environment \
-                --environment-name Dune-backend-env \
+                --environment-name Dune-backend2-env \
                 --solution-stack-name "${{ env.SOLUTION_STACK }}" \
                 --option-settings file://eb-options.json
             fi
             
             echo "Waiting for environment to be ready..."
             while true; do
-              STATUS=$(aws elasticbeanstalk describe-environments --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
+              STATUS=$(aws elasticbeanstalk describe-environments --environment-names Dune-backend2-env --query "Environments[0].Status" --output text)
               if [ "$STATUS" = "Ready" ]; then
                 echo "Environment is ready"
                 break
@@ -144,8 +82,8 @@ jobs:
       with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: dune-backend
-          environment_name: Dune-backend-env
+          application_name: dune-backend2
+          environment_name: Dune-backend2-env
           version_label: ${{ env.VERSION_LABEL }}
           region: ${{ secrets.AWS_REGION }}
           deployment_package: ${{ env.VERSION_LABEL }}.zip
