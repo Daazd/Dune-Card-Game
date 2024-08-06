@@ -144,6 +144,7 @@ jobs:
               echo "Existing Network Interfaces: $NETWORK_INTERFACES"
           
               PUBLIC_ENI_ID=$(echo "$NETWORK_INTERFACES" | jq -r '.[] | select(.SubnetId == "'$PUBLIC_SUBNET_ID'") | .Id')
+              PRIVATE_ENI_ID=$(echo "$NETWORK_INTERFACES" | jq -r '.[] | select(.SubnetId == "'${{ env.CURRENT_SUBNET_ID }}'") | .Id')
           
               if [ -n "$PUBLIC_ENI_ID" ]; then
                 echo "Network interface in public subnet already exists: $PUBLIC_ENI_ID"
@@ -155,13 +156,17 @@ jobs:
           
                 aws ec2 modify-network-interface-attribute --network-interface-id $NEW_ENI_ID --groups $SG_ID
           
-                AVAILABLE_INDEX=$(echo "$NETWORK_INTERFACES" | jq -r '[.[].DeviceIndex] | max + 1')
-          
-                ATTACHMENT_ID=$(aws ec2 attach-network-interface --network-interface-id $NEW_ENI_ID --instance-id ${{ secrets.EC2_INSTANCE_ID }} --device-index $AVAILABLE_INDEX --query 'AttachmentId' --output text)
-                echo "Attachment ID: $ATTACHMENT_ID"
-          
                 PUBLIC_ENI_ID=$NEW_ENI_ID
               fi
+          
+              # Detach the existing primary network interface
+              ATTACHMENT_ID=$(aws ec2 describe-network-interfaces --network-interface-ids $PRIVATE_ENI_ID --query 'NetworkInterfaces[0].Attachment.AttachmentId' --output text)
+              aws ec2 detach-network-interface --attachment-id $ATTACHMENT_ID
+              echo "Detached network interface: $PRIVATE_ENI_ID"
+          
+              # Attach the public network interface as the primary
+              aws ec2 attach-network-interface --network-interface-id $PUBLIC_ENI_ID --instance-id ${{ secrets.EC2_INSTANCE_ID }} --device-index 0
+              echo "Attached public network interface: $PUBLIC_ENI_ID"
           
               aws ec2 start-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
               echo "Waiting for instance to start..."
@@ -177,7 +182,7 @@ jobs:
                 echo "Error: Instance is not in the public subnet"
                 exit 1
               fi
-              
+
     - name: Update Public IP
       run: |
           NEW_PUBLIC_IP=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
