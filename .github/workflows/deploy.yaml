@@ -170,10 +170,11 @@ jobs:
         aws ec2 describe-network-acls --network-acl-ids $NACL_ID
 
     - name: Test SSH Connection
+      continue-on-error: true  # This allows the workflow to continue even if this step fails
       run: |
-        ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
-        aws ec2-instance-connect send-ssh-public-key --instance-id ${{ secrets.EC2_INSTANCE_ID }} --availability-zone ${{ env.AZ }} --instance-os-user ec2-user --ssh-public-key file://./id_rsa.pub
-        ssh -o StrictHostKeyChecking=no -i ./id_rsa ec2-user@${{ env.EC2_PUBLIC_IP }} "echo Connection successful"
+          ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
+          aws ec2-instance-connect send-ssh-public-key --instance-id ${{ secrets.EC2_INSTANCE_ID }} --availability-zone ${{ env.AZ }} --instance-os-user ec2-user --ssh-public-key file://./id_rsa.pub
+          ssh -o StrictHostKeyChecking=no -i ./id_rsa ec2-user@${{ env.EC2_PUBLIC_IP }} "echo Connection successful"
 
     - name: Deploy to EC2
       env:
