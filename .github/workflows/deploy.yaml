@@ -40,30 +40,38 @@ jobs:
           echo "Latest Docker solution stack: $SOLUTION_STACK"
           echo "SOLUTION_STACK=$SOLUTION_STACK" >> $GITHUB_ENV
 
-    - name: Check if Elastic Beanstalk environment exists
+    - name: Check, terminate, and recreate Elastic Beanstalk environment
       run: |
-            ENV_STATUS=$(aws elasticbeanstalk describe-environments --application-name dune-backend --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
-            echo "ENV_STATUS=$ENV_STATUS" >> $GITHUB_ENV
-      
-    - name: Create or update Elastic Beanstalk environment
-      run: |
-            if [ "${{ env.ENV_STATUS }}" = "None" ]; then
-              echo "Creating new environment..."
-              aws elasticbeanstalk create-environment \
-                --application-name dune-backend2 \
-                --environment-name Dune-backend2-env \
-                --solution-stack-name "${{ env.SOLUTION_STACK }}" \
-                --option-settings file://eb-options.json
-            fi
+            echo "Terminating existing environment..."
+            aws elasticbeanstalk terminate-environment --environment-name Dune-backend-env || true
             
-            echo "Waiting for environment to be ready..."
+            echo "Waiting for environment to terminate..."
             while true; do
-              STATUS=$(aws elasticbeanstalk describe-environments --environment-names Dune-backend2-env --query "Environments[0].Status" --output text)
+              STATUS=$(aws elasticbeanstalk describe-environments --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
+              if [ "$STATUS" = "Terminated" ] || [ "$STATUS" = "None" ]; then
+                echo "Environment terminated"
+                break
+              else
+                echo "Environment is $STATUS. Waiting..."
+                sleep 30
+              fi
+            done
+            
+            echo "Creating new environment..."
+            aws elasticbeanstalk create-environment \
+              --application-name dune-backend \
+              --environment-name Dune-backend-env \
+              --solution-stack-name "${{ env.SOLUTION_STACK }}" \
+              --option-settings file://eb-options.json
+            
+            echo "Waiting for new environment to be ready..."
+            while true; do
+              STATUS=$(aws elasticbeanstalk describe-environments --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
               if [ "$STATUS" = "Ready" ]; then
-                echo "Environment is ready"
+                echo "New environment is ready"
                 break
               elif [ "$STATUS" = "Terminated" ]; then
-                echo "Environment update/creation failed. Cannot proceed."
+                echo "Environment creation failed. Cannot proceed."
                 exit 1
               else
                 echo "Environment is $STATUS. Waiting..."
