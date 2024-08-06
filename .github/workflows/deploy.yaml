@@ -122,35 +122,51 @@ jobs:
     - name: Move EC2 to Public Subnet (if needed)
       if: env.CURRENT_SUBNET_ID != env.PUBLIC_SUBNET_ID
       run: |
-          # Stop the instance
-          aws ec2 stop-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
-          echo "Waiting for instance to stop..."
-          aws ec2 wait instance-stopped --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
-          
+          # Get instance details
+          INSTANCE_AZ=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].Placement.AvailabilityZone' --output text)
+          echo "Instance Availability Zone: $INSTANCE_AZ"
+      
+          # Find a public subnet in the same AZ as the instance
+          PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=${{ env.VPC_ID }}" "Name=availabilityZone,Values=$INSTANCE_AZ" "Name=map-public-ip-on-launch,Values=true" --query 'Subnets[0].SubnetId' --output text)
+          echo "Public Subnet ID in same AZ: $PUBLIC_SUBNET_ID"
+      
+          if [ "$PUBLIC_SUBNET_ID" == "None" ]; then
+            echo "Error: No public subnet found in the same AZ as the instance"
+            exit 1
+          fi
+      
+          # Stop the instance if it's running
+          INSTANCE_STATE=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].State.Name' --output text)
+          if [ "$INSTANCE_STATE" != "stopped" ]; then
+            aws ec2 stop-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+            echo "Waiting for instance to stop..."
+            aws ec2 wait instance-stopped --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+          fi
+      
           # Create a new network interface in the public subnet
-          NEW_ENI_ID=$(aws ec2 create-network-interface --subnet-id ${{ env.PUBLIC_SUBNET_ID }} --description "New public interface" --query 'NetworkInterface.NetworkInterfaceId' --output text)
+          NEW_ENI_ID=$(aws ec2 create-network-interface --subnet-id $PUBLIC_SUBNET_ID --description "New public interface" --query 'NetworkInterface.NetworkInterfaceId' --output text)
           echo "New Network Interface ID: $NEW_ENI_ID"
-          
+      
           # Get the security group ID
           SG_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
-          
+      
           # Attach the security group to the new network interface
           aws ec2 modify-network-interface-attribute --network-interface-id $NEW_ENI_ID --groups $SG_ID
-          
+      
           # Attach the new network interface to the instance
           aws ec2 attach-network-interface --network-interface-id $NEW_ENI_ID --instance-id ${{ secrets.EC2_INSTANCE_ID }} --device-index 1
-          
+      
           # Modify instance attribute to use the new network interface as primary
-          aws ec2 modify-instance-attribute --instance-id ${{ secrets.EC2_INSTANCE_ID }} --network-interface-attribute "1=Primary"
-          
+          aws ec2 modify-instance-attribute --instance-id ${{ secrets.EC2_INSTANCE_ID }} --network-interface '{"DeviceIndex": 1, "NetworkInterfaceId": "'$NEW_ENI_ID'", "DeleteOnTermination": true}'
+      
           # Start the instance
           aws ec2 start-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
           echo "Waiting for instance to start..."
           aws ec2 wait instance-running --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
-          
+      
           # Get the old network interface ID
           OLD_ENI_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].NetworkInterfaces[?Attachment.DeviceIndex==`0`].NetworkInterfaceId' --output text)
-          
+      
           # Detach and delete the old network interface
           aws ec2 detach-network-interface --attachment-id $(aws ec2 describe-network-interfaces --network-interface-ids $OLD_ENI_ID --query 'NetworkInterfaces[0].Attachment.AttachmentId' --output text)
           aws ec2 delete-network-interface --network-interface-id $OLD_ENI_ID
