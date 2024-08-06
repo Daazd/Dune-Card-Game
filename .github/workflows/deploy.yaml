@@ -54,12 +54,6 @@ jobs:
                 --environment-name Dune-backend2-env \
                 --solution-stack-name "${{ env.SOLUTION_STACK }}" \
                 --option-settings file://eb-options.json
-            else
-              echo "Updating existing environment..."
-              aws elasticbeanstalk update-environment \
-                --environment-name Dune-backend2-env \
-                --solution-stack-name "${{ env.SOLUTION_STACK }}" \
-                --option-settings file://eb-options.json
             fi
             
             echo "Waiting for environment to be ready..."
