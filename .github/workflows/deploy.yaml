@@ -169,6 +169,15 @@ jobs:
           
               ATTACHMENT_ID=$(aws ec2 describe-network-interfaces --network-interface-ids $PUBLIC_ENI_ID --query 'NetworkInterfaces[0].Attachment.AttachmentId' --output text)
               aws ec2 modify-network-interface-attribute --network-interface-id $PUBLIC_ENI_ID --attachment "{\"AttachmentId\":\"$ATTACHMENT_ID\",\"DeleteOnTermination\":true}"
+          
+              INSTANCE_SUBNET_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SubnetId' --output text)
+              echo "Instance Subnet ID: $INSTANCE_SUBNET_ID"
+              echo "Public Subnet ID: $PUBLIC_SUBNET_ID"
+              if [ "$INSTANCE_SUBNET_ID" != "$PUBLIC_SUBNET_ID" ]; then
+                echo "Error: Instance is not in the public subnet"
+                exit 1
+              fi
+              
     - name: Update Public IP
       run: |
           NEW_PUBLIC_IP=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
