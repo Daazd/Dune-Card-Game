@@ -2,7 +2,9 @@ services:
   - type: web
     name: dune-backend
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py initialize_db
     startCommand: gunicorn Dunecardgame.wsgi:application
     envVars:
       - key: DATABASE_URL
