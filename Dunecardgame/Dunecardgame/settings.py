@@ -176,7 +176,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://66.175.217.167:30133',
     'http://66.175.217.154:30133',
     'http://66.175.217.145:30133',
-    'http://45.79.231.182'
+    'http://45.79.231.182',
     'https://dune-card-game-oe6uqn6ms-taylors-projects-f785236c.vercel.app/'
     
 ]
