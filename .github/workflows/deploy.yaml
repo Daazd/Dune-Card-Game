@@ -148,6 +148,29 @@ jobs:
         echo "Checking Internet Gateway..."
         aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=${{ env.VPC_ID }}" --query 'InternetGateways[*].{InternetGatewayId:InternetGatewayId,State:Attachments[0].State}'
 
+    - name: Check Security Group Inbound Rules
+      run: |
+          SG_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
+          aws ec2 describe-security-group-rules --filters Name="group-id",Values="$SG_ID" --query 'SecurityGroupRules[?!IsEgress]'
+
+    - name: Verify Instance Subnet
+      run: |
+            INSTANCE_SUBNET_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SubnetId' --output text)
+            PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=${{ env.VPC_ID }}" "Name=map-public-ip-on-launch,Values=true" --query 'Subnets[0].SubnetId' --output text)
+            echo "Instance Subnet ID: $INSTANCE_SUBNET_ID"
+            echo "Public Subnet ID: $PUBLIC_SUBNET_ID"
+            if [ "$INSTANCE_SUBNET_ID" != "$PUBLIC_SUBNET_ID" ]; then
+              echo "Warning: Instance is not in the public subnet"
+            fi
+    
+    - name: Ping Instance
+      run: |
+            ping -c 4 ${{ env.EC2_PUBLIC_IP }} || echo "Ping failed"
+
+    - name: Check SSM Session Manager
+      run: |
+            aws ssm start-session --target ${{ secrets.EC2_INSTANCE_ID }} --document-name AWS-StartInteractiveCommand --parameters command="echo SSM connection successful" || echo "SSM connection failed"
+
     - name: Check Route Table
       run: |
         echo "Subnet ID: ${{ env.PUBLIC_SUBNET_ID }}"
