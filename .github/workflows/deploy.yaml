@@ -89,9 +89,6 @@ jobs:
         umask 077
         ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
   
-    - name: Set permissions for SSH key
-      run: ls -l ./id_rsa
-  
     - name: Verify permissions for SSH key
       run: ls -l ./id_rsa
   
