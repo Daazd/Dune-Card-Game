@@ -85,11 +85,13 @@ jobs:
         aws ec2 describe-instance-status --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'InstanceStatuses[0].InstanceState.Name' --output text
 
     - name: Generate SSH key
-      run: |
-          ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
-
+      run: ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
+  
     - name: Set permissions for SSH key
       run: chmod 600 ./id_rsa
+  
+    - name: Verify permissions for SSH key
+      run: ls -l ./id_rsa
   
     - name: Start SSH Agent and Add Key
       run: |
