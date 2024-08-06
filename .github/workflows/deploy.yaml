@@ -34,23 +34,63 @@ jobs:
         docker tag dune-cf-backend:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/dune-cf-backend:latest
         docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/dune-cf-backend:latest
 
-    - name: Generate Elastic Beanstalk version
+        - name: Check and terminate existing environment if necessary
+        run: |
+          ENV_STATUS=$(aws elasticbeanstalk describe-environments --application-name dune-backend --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
+          if [ "$ENV_STATUS" != "Ready" ] && [ "$ENV_STATUS" != "Terminated" ] && [ "$ENV_STATUS" != "None" ]; then
+            echo "Environment is in $ENV_STATUS state. Terminating..."
+            aws elasticbeanstalk terminate-environment --environment-name Dune-backend-env
+            echo "Waiting for environment to terminate..."
+            while true; do
+              STATUS=$(aws elasticbeanstalk describe-environments --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
+              if [ "$STATUS" = "Terminated" ] || [ "$STATUS" = "None" ]; then
+                echo "Environment terminated"
+                break
+              else
+                echo "Environment is $STATUS. Waiting..."
+                sleep 30
+              fi
+            done
+          elif [ "$ENV_STATUS" = "Ready" ]; then
+            echo "Environment is ready. No need to terminate."
+          else
+            echo "Environment does not exist or is already terminated."
+          fi
+      
+    - name: Create or update Elastic Beanstalk environment
       run: |
-          TIMESTAMP=$(date +%Y%m%d%H%M%S)
-          VERSION_LABEL="ver-${{ github.sha }}-$TIMESTAMP"
-          echo "VERSION_LABEL=$VERSION_LABEL" >> $GITHUB_ENV
-          zip -r "${VERSION_LABEL}.zip" Dunecardgame/* .ebextensions/* Dockerrun.aws.json
-
+          aws elasticbeanstalk create-environment \
+            --application-name dune-backend \
+            --environment-name Dune-backend-env \
+            --solution-stack-name "64bit Amazon Linux 2 v3.5.7 running Docker" \
+            --option-settings file://eb-options.json
+          
+          echo "Waiting for environment to be ready..."
+          while true; do
+            STATUS=$(aws elasticbeanstalk describe-environments --environment-names Dune-backend-env --query "Environments[0].Status" --output text)
+            if [ "$STATUS" = "Ready" ]; then
+              echo "Environment is ready"
+              break
+            elif [ "$STATUS" = "Terminated" ]; then
+              echo "Environment creation failed. Cannot proceed."
+              exit 1
+            else
+              echo "Environment is $STATUS. Waiting..."
+              sleep 30
+            fi
+          done
+      
     - name: Deploy to Elastic Beanstalk
       uses: einaregilsson/beanstalk-deploy@v21
       with:
-        aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        application_name: dune-backend
-        environment_name: Dune-backend-env
-        version_label: ${{ env.VERSION_LABEL }}
-        region: ${{ secrets.AWS_REGION }}
-        deployment_package: ${{ env.VERSION_LABEL }}.zip
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: dune-backend
+          environment_name: Dune-backend-env
+          version_label: ${{ env.VERSION_LABEL }}
+          region: ${{ secrets.AWS_REGION }}
+          deployment_package: ${{ env.VERSION_LABEL }}.zip
+          wait_for_deployment: true
 
     - name: Build frontend Docker image
       working-directory: Dunecardgame/Dune-Front-End
