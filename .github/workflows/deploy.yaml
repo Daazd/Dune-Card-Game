@@ -81,22 +81,18 @@ jobs:
     - name: Invalidate CloudFront cache
       run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
 
-    - name: Check EC2 instance state
+    - name: Get VPC and Subnet Info
       run: |
-        aws ec2 describe-instance-status --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'InstanceStatuses[0].InstanceState.Name' --output text
+        VPC_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].VpcId' --output text)
+        CURRENT_SUBNET_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SubnetId' --output text)
+        AZ=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].Placement.AvailabilityZone' --output text)
+        echo "VPC ID: $VPC_ID"
+        echo "Current Subnet ID: $CURRENT_SUBNET_ID"
+        echo "Availability Zone: $AZ"
+        echo "VPC_ID=$VPC_ID" >> $GITHUB_ENV
+        echo "CURRENT_SUBNET_ID=$CURRENT_SUBNET_ID" >> $GITHUB_ENV
+        echo "AZ=$AZ" >> $GITHUB_ENV
 
-        - name: Get VPC and Subnet Info
-        run: |
-          VPC_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].VpcId' --output text)
-          CURRENT_SUBNET_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SubnetId' --output text)
-          AZ=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].Placement.AvailabilityZone' --output text)
-          echo "VPC ID: $VPC_ID"
-          echo "Current Subnet ID: $CURRENT_SUBNET_ID"
-          echo "Availability Zone: $AZ"
-          echo "VPC_ID=$VPC_ID" >> $GITHUB_ENV
-          echo "CURRENT_SUBNET_ID=$CURRENT_SUBNET_ID" >> $GITHUB_ENV
-          echo "AZ=$AZ" >> $GITHUB_ENV
-      
     - name: Check for Existing Public Subnet
       run: |
         PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=${{ env.VPC_ID }}" "Name=map-public-ip-on-launch,Values=true" --query 'Subnets[0].SubnetId' --output text)
@@ -106,7 +102,7 @@ jobs:
         else
           echo "No existing public subnet found. Creating new one."
         fi
-    
+
     - name: Create Public Subnet (if needed)
       if: env.PUBLIC_SUBNET_ID == ''
       run: |
@@ -122,7 +118,7 @@ jobs:
         aws ec2 modify-subnet-attribute --subnet-id $NEW_SUBNET_ID --map-public-ip-on-launch
         
         echo "PUBLIC_SUBNET_ID=$NEW_SUBNET_ID" >> $GITHUB_ENV
-    
+
     - name: Move EC2 to Public Subnet (if needed)
       if: env.CURRENT_SUBNET_ID != env.PUBLIC_SUBNET_ID
       run: |
@@ -135,89 +131,54 @@ jobs:
         aws ec2 start-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
         echo "Waiting for instance to start..."
         aws ec2 wait instance-running --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
-    
+
     - name: Update Public IP
       run: |
         NEW_PUBLIC_IP=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
         echo "New Public IP: $NEW_PUBLIC_IP"
         echo "EC2_PUBLIC_IP=$NEW_PUBLIC_IP" >> $GITHUB_ENV
-    
+
+    - name: Check VPC and Internet Gateway
+      run: |
+        echo "VPC ID: ${{ env.VPC_ID }}"
+        aws ec2 describe-vpcs --vpc-ids ${{ env.VPC_ID }} --query 'Vpcs[0].{CidrBlock:CidrBlock,State:State}'
+        echo "Checking Internet Gateway..."
+        aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=${{ env.VPC_ID }}" --query 'InternetGateways[*].{InternetGatewayId:InternetGatewayId,State:Attachments[0].State}'
+
+    - name: Check Route Table
+      run: |
+        echo "Subnet ID: ${{ env.PUBLIC_SUBNET_ID }}"
+        aws ec2 describe-route-tables --filters "Name=association.subnet-id,Values=${{ env.PUBLIC_SUBNET_ID }}" --query 'RouteTables[*].Routes'
+
+    - name: Check Network Interface
+      run: |
+        aws ec2 describe-network-interfaces --filters "Name=attachment.instance-id,Values=${{ secrets.EC2_INSTANCE_ID }}" --query 'NetworkInterfaces[*].{SubnetId:SubnetId,PrivateIpAddress:PrivateIpAddress,PublicIp:Association.PublicIp,Status:Status}'
+
+    - name: Check Security Group Rules
+      run: |
+        SG_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
+        echo "Security Group ID: $SG_ID"
+        aws ec2 describe-security-group-rules --filters Name="group-id",Values="$SG_ID" --query 'SecurityGroupRules[?IpProtocol==`tcp` && FromPort==`22`]'
+
+    - name: Check Network ACL Rules
+      run: |
+        NACL_ID=$(aws ec2 describe-network-acls --filters Name=association.subnet-id,Values=${{ env.PUBLIC_SUBNET_ID }} --query 'NetworkAcls[0].NetworkAclId' --output text)
+        echo "Network ACL ID: $NACL_ID"
+        aws ec2 describe-network-acls --network-acl-ids $NACL_ID
+
     - name: Test SSH Connection
       run: |
         ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
         aws ec2-instance-connect send-ssh-public-key --instance-id ${{ secrets.EC2_INSTANCE_ID }} --availability-zone ${{ env.AZ }} --instance-os-user ec2-user --ssh-public-key file://./id_rsa.pub
         ssh -o StrictHostKeyChecking=no -i ./id_rsa ec2-user@${{ env.EC2_PUBLIC_IP }} "echo Connection successful"
 
-
-    - name: Check VPC and Internet Gateway
-      run: |
-        VPC_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].VpcId' --output text)
-        echo "VPC ID: $VPC_ID"
-        aws ec2 describe-vpcs --vpc-ids $VPC_ID --query 'Vpcs[0].{CidrBlock:CidrBlock,State:State}'
-        echo "Checking Internet Gateway..."
-        aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=$VPC_ID" --query 'InternetGateways[*].{InternetGatewayId:InternetGatewayId,State:Attachments[0].State}'
-
-    - name: Check Route Table
-      run: |
-          SUBNET_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SubnetId' --output text)
-          echo "Subnet ID: $SUBNET_ID"
-          aws ec2 describe-route-tables --filters "Name=association.subnet-id,Values=$SUBNET_ID" --query 'RouteTables[*].Routes'
-
-    - name: Check Network Interface
-      run: |
-        aws ec2 describe-network-interfaces --filters "Name=attachment.instance-id,Values=${{ secrets.EC2_INSTANCE_ID }}" --query 'NetworkInterfaces[*].{SubnetId:SubnetId,PrivateIpAddress:PrivateIpAddress,PublicIp:Association.PublicIp,Status:Status}'
-
-    - name: Get EC2 Instance Availability Zone
-      run: |
-          AZ=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].Placement.AvailabilityZone' --output text)
-          echo "EC2_AVAILABILITY_ZONE=$AZ" >> $GITHUB_ENV
-          echo "Availability Zone: $AZ"
-
-    - name: Check Security Group Rules
-      run: |
-            SG_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
-            echo "Security Group ID: $SG_ID"
-            aws ec2 describe-security-group-rules --filters Name="group-id",Values="$SG_ID" --query 'SecurityGroupRules[?IpProtocol==`tcp` && FromPort==`22`]'
-
-    - name: Check Public IP
-      run: |
-            PUBLIC_IP=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
-            echo "Public IP: $PUBLIC_IP"
-            echo "EC2_PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
-
-    - name: Check Network ACL Rules
-      run: |
-        SUBNET_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SubnetId' --output text)
-        echo "Subnet ID: $SUBNET_ID"
-        NACL_ID=$(aws ec2 describe-network-acls --filters Name=association.subnet-id,Values=$SUBNET_ID --query 'NetworkAcls[0].NetworkAclId' --output text)
-        echo "Network ACL ID: $NACL_ID"
-        aws ec2 describe-network-acls --network-acl-ids $NACL_ID
-
-    - name: Try EC2 Instance Connect
-      run: |
-          ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
-          aws ec2-instance-connect send-ssh-public-key \
-            --instance-id ${{ secrets.EC2_INSTANCE_ID }} \
-            --availability-zone ${{ env.EC2_AVAILABILITY_ZONE }} \
-            --instance-os-user ec2-user \
-            --ssh-public-key file://./id_rsa.pub
-          ssh -o StrictHostKeyChecking=no -i ./id_rsa ec2-user@${{ env.EC2_PUBLIC_IP }} "echo Connection successful"
-
-    - name: Check Instance Reachability
-      run: |
-            echo "Attempting to ping ${{ env.EC2_PUBLIC_IP }}..."
-            ping -c 4 ${{ env.EC2_PUBLIC_IP }}
-            echo "Attempting to telnet to port 22..."
-            timeout 5 telnet ${{ env.EC2_PUBLIC_IP }} 22
-
     - name: Deploy to EC2
       env:
-        EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
-        EC2_USER: ec2-user  # or the appropriate user for your EC2 instance
+        EC2_USER: ec2-user
       run: |
         echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > private_key.pem
         chmod 600 private_key.pem
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ${EC2_USER}@${EC2_PUBLIC_IP} '
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ${EC2_USER}@${{ env.EC2_PUBLIC_IP }} '
           docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/dune-cf-backend:latest &&
           docker stop dune-backend || true &&
           docker rm dune-backend || true &&
