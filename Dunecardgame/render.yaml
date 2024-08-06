@@ -4,6 +4,8 @@ services:
     env: python
     buildCommand: |
       cd Dunecardgame
+      echo "Current directory contents:"
+      ls -la
       pip install -r requirements.txt
       python manage.py initialize_db
       python manage.py collectstatic --noinput
