@@ -85,49 +85,68 @@ jobs:
       run: |
         aws ec2 describe-instance-status --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'InstanceStatuses[0].InstanceState.Name' --output text
 
-    - name: Create Public Subnet
+        - name: Get VPC and Subnet Info
+        run: |
+          VPC_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].VpcId' --output text)
+          CURRENT_SUBNET_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].SubnetId' --output text)
+          AZ=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].Placement.AvailabilityZone' --output text)
+          echo "VPC ID: $VPC_ID"
+          echo "Current Subnet ID: $CURRENT_SUBNET_ID"
+          echo "Availability Zone: $AZ"
+          echo "VPC_ID=$VPC_ID" >> $GITHUB_ENV
+          echo "CURRENT_SUBNET_ID=$CURRENT_SUBNET_ID" >> $GITHUB_ENV
+          echo "AZ=$AZ" >> $GITHUB_ENV
+      
+    - name: Check for Existing Public Subnet
       run: |
-        VPC_ID=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].VpcId' --output text)
-        IGW_ID=$(aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=$VPC_ID" --query 'InternetGateways[0].InternetGatewayId' --output text)
-        SUBNET_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.1.0/24 --availability-zone ${{ env.EC2_AVAILABILITY_ZONE }} --query 'Subnet.SubnetId' --output text)
-        echo "New Subnet ID: $SUBNET_ID"
+        PUBLIC_SUBNET_ID=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=${{ env.VPC_ID }}" "Name=map-public-ip-on-launch,Values=true" --query 'Subnets[0].SubnetId' --output text)
+        if [ "$PUBLIC_SUBNET_ID" != "None" ]; then
+          echo "Existing public subnet found: $PUBLIC_SUBNET_ID"
+          echo "PUBLIC_SUBNET_ID=$PUBLIC_SUBNET_ID" >> $GITHUB_ENV
+        else
+          echo "No existing public subnet found. Creating new one."
+        fi
+    
+    - name: Create Public Subnet (if needed)
+      if: env.PUBLIC_SUBNET_ID == ''
+      run: |
+        IGW_ID=$(aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=${{ env.VPC_ID }}" --query 'InternetGateways[0].InternetGatewayId' --output text)
+        NEW_SUBNET_ID=$(aws ec2 create-subnet --vpc-id ${{ env.VPC_ID }} --cidr-block 10.0.2.0/24 --availability-zone ${{ env.AZ }} --query 'Subnet.SubnetId' --output text)
+        echo "New Subnet ID: $NEW_SUBNET_ID"
         
-        # Create a new route table
-        RT_ID=$(aws ec2 create-route-table --vpc-id $VPC_ID --query 'RouteTable.RouteTableId' --output text)
+        RT_ID=$(aws ec2 create-route-table --vpc-id ${{ env.VPC_ID }} --query 'RouteTable.RouteTableId' --output text)
         echo "New Route Table ID: $RT_ID"
         
-        # Add route to Internet Gateway
         aws ec2 create-route --route-table-id $RT_ID --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
+        aws ec2 associate-route-table --subnet-id $NEW_SUBNET_ID --route-table-id $RT_ID
+        aws ec2 modify-subnet-attribute --subnet-id $NEW_SUBNET_ID --map-public-ip-on-launch
         
-        # Associate the route table with the new subnet
-        aws ec2 associate-route-table --subnet-id $SUBNET_ID --route-table-id $RT_ID
-        
-        # Enable auto-assign public IP for the subnet
-        aws ec2 modify-subnet-attribute --subnet-id $SUBNET_ID --map-public-ip-on-launch
-
-    - name: Update Public IP
-      run: |
-          NEW_PUBLIC_IP=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
-          echo "New Public IP: $NEW_PUBLIC_IP"
-          echo "EC2_PUBLIC_IP=$NEW_PUBLIC_IP" >> $GITHUB_ENV
-
-    - name: Test SSH Connection
-      run: |
-        ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
-        aws ec2-instance-connect send-ssh-public-key --instance-id ${{ secrets.EC2_INSTANCE_ID }} --availability-zone ${{ env.EC2_AVAILABILITY_ZONE }} --instance-os-user ec2-user --ssh-public-key file://./id_rsa.pub
-        ssh -o StrictHostKeyChecking=no -i ./id_rsa ec2-user@${{ env.EC2_PUBLIC_IP }} "echo Connection successful"
-
-    - name: Move EC2 to Public Subnet
+        echo "PUBLIC_SUBNET_ID=$NEW_SUBNET_ID" >> $GITHUB_ENV
+    
+    - name: Move EC2 to Public Subnet (if needed)
+      if: env.CURRENT_SUBNET_ID != env.PUBLIC_SUBNET_ID
       run: |
         aws ec2 stop-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
         echo "Waiting for instance to stop..."
         aws ec2 wait instance-stopped --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
         
-        aws ec2 modify-instance-attribute --instance-id ${{ secrets.EC2_INSTANCE_ID }} --attribute subnet-id --value $SUBNET_ID
+        aws ec2 modify-instance-attribute --instance-id ${{ secrets.EC2_INSTANCE_ID }} --attribute subnet-id --value ${{ env.PUBLIC_SUBNET_ID }}
         
         aws ec2 start-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
         echo "Waiting for instance to start..."
         aws ec2 wait instance-running --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+    
+    - name: Update Public IP
+      run: |
+        NEW_PUBLIC_IP=$(aws ec2 describe-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }} --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+        echo "New Public IP: $NEW_PUBLIC_IP"
+        echo "EC2_PUBLIC_IP=$NEW_PUBLIC_IP" >> $GITHUB_ENV
+    
+    - name: Test SSH Connection
+      run: |
+        ssh-keygen -t rsa -b 4096 -f ./id_rsa -N ""
+        aws ec2-instance-connect send-ssh-public-key --instance-id ${{ secrets.EC2_INSTANCE_ID }} --availability-zone ${{ env.AZ }} --instance-os-user ec2-user --ssh-public-key file://./id_rsa.pub
+        ssh -o StrictHostKeyChecking=no -i ./id_rsa ec2-user@${{ env.EC2_PUBLIC_IP }} "echo Connection successful"
 
 
     - name: Check VPC and Internet Gateway
