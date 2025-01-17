@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://dune-backen.onrender.com/api';
-export const MEDIA_URL = process.env.REACT_APP_MEDIA_URL || 'https://dune-backen.onrender.com/media/';
+// export const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://dune-backen.onrender.com/api';
+// export const MEDIA_URL = process.env.REACT_APP_MEDIA_URL || 'https://dune-backen.onrender.com/media/';
+
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+export const MEDIA_URL = process.env.REACT_APP_MEDIA_URL || 'http://localhost:8000/media/';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -73,6 +76,33 @@ export const getCardsByDeck = async (deckName) => {
     }
     throw error;
   }
+};
+
+export const startDemo = async (type) => {
+    setDemoState(type);
+    setAlerts([]);
+    
+    try {
+        await fetch('/api/simulation/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ type })
+        });
+        
+        // Start SSE connection for real-time updates
+        const eventSource = new EventSource('/api/events/');
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            setRealtimeData(prev => [...prev.slice(-19), data]);
+        };
+        
+        // Cleanup
+        return () => eventSource.close();
+    } catch (error) {
+        console.error('Failed to start simulation:', error);
+    }
 };
 
 export default axiosInstance;

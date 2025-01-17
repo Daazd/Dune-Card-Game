@@ -19,7 +19,7 @@ const Welcome = ({ setAuthToken, setIsAdmin, authToken, isAdmin }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/login/`, {
+      const response = await axios.post(`${API_BASE_URL}/login/`, {
         username,
         password,
       });
@@ -38,7 +38,7 @@ const Welcome = ({ setAuthToken, setIsAdmin, authToken, isAdmin }) => {
 
   const handleRegister = async () => {
     try {
-      await axios.post(`${API_BASE_URL}/api/register/`, {
+      await axios.post(`${API_BASE_URL}/register/`, {
         username,
         password,
         email,
@@ -109,6 +109,23 @@ const Welcome = ({ setAuthToken, setIsAdmin, authToken, isAdmin }) => {
             <AdminPanelSettings fontSize="large" />
           </IconButton>
         )}
+         {isAdmin && (
+            <Button
+              variant="contained"
+              onClick={() => navigate('/security-dashboard')}
+              sx={{
+                marginTop: 2,
+                backgroundColor: '#328ba8',
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: '#e64a19'
+                }
+              }}
+            >
+              Security Dashboard
+            </Button>
+          )}
+
         {authToken && (
           <IconButton
             onClick={() => navigate('/account')}

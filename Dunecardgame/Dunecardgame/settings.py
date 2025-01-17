@@ -84,6 +84,12 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+    ]
 }
 
 from datetime import timedelta
@@ -120,21 +126,66 @@ WSGI_APPLICATION = 'Dunecardgame.wsgi.application'
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-if DATABASE_URL:
-    DATABASES = {
-        'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+# if DATABASE_URL:
+#     DATABASES = {
+#         'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+#     }
+# else:
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.postgresql',
+#             'NAME': os.environ.get('DB_NAME', 'dune_card_game_db'),
+#             'USER': os.environ.get('DB_USER', 'dune_card_game_db_user'),
+#             'PASSWORD': os.environ.get('DB_PASSWORD', 'jwt0bYSWsdpWYhhLBl3oL9fwlPJ5pLHm'),
+#             'HOST': os.environ.get('DB_HOST', 'dpg-cqp7vu8gph6c73fiu6e0-a.ohio-postgres.render.com'),
+#             'PORT': os.environ.get('DB_PORT', '5432'),
+#         }
+#     }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME', 'dune_card_game_db'),
-            'USER': os.environ.get('DB_USER', 'dune_card_game_db_user'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', 'jwt0bYSWsdpWYhhLBl3oL9fwlPJ5pLHm'),
-            'HOST': os.environ.get('DB_HOST', 'dpg-cqp7vu8gph6c73fiu6e0-a.ohio-postgres.render.com'),
-            'PORT': os.environ.get('DB_PORT', '5432'),
-        }
-    }
+}
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.environ.get('DB_NAME'),
+#         'USER': os.environ.get('DB_USER'),
+#         'PASSWORD': os.environ.get('DB_PASSWORD'),
+#         'HOST': os.environ.get('DB_HOST'),
+#         'PORT': os.environ.get('DB_PORT'),
+#         'OPTIONS': {
+#             'sslmode': 'verify-full',  # Enforce SSL
+#             'sslcert': '/path/to/client-cert.pem',
+#             'sslkey': '/path/to/client-key.pem',
+#             'sslrootcert': '/path/to/server-ca.pem',
+#         },
+#         'CONN_MAX_AGE': 60,  # Connection pooling
+#     }
+# }
+
+# # Security settings
+# SECURE_SSL_REDIRECT = True
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
+# SECURE_HSTS_SECONDS = 31536000
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_HSTS_PRELOAD = True
+
+# # Rate limiting for APIs
+# REST_FRAMEWORK = {
+#     'DEFAULT_THROTTLE_CLASSES': [
+#         'rest_framework.throttling.AnonRateThrottle',
+#         'rest_framework.throttling.UserRateThrottle'
+#     ],
+#     'DEFAULT_THROTTLE_RATES': {
+#         'anon': '100/day',
+#         'user': '1000/day'
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -181,6 +232,16 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_ALL_ORIGINS = True  # For development only, be more restrictive in production
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
+CORS_ALLOW_HEADERS = ['*']
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/

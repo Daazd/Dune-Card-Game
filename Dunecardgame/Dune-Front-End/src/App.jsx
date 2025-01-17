@@ -7,12 +7,19 @@ import CardList from './Components/CardList';
 import Login from './Components/Login';
 import Register from './Components/Register';
 import Account from './Components/Account';
+import UnifiedSecurityDashboard from './Components/UnifiedSecurityDashboard';
+import MLModelVisualization from './Components/MLModelVisualization';
 import AuthPage from './Components/AuthPage';
 import { getCards, getDecks, getCardsByDeck } from './api';
 import './App.css';
 import axios from 'axios';
 import axiosInstance from './api';
 import { API_BASE_URL } from './api'; 
+import { IconButton } from '@mui/material';
+import CottageIcon from '@mui/icons-material/Cottage';
+import Layout from './Components/Layout';
+import { Navigate } from 'react-router-dom';
+
 
 const App = () => {
   const [cards, setCards] = useState([]);
@@ -123,77 +130,93 @@ const App = () => {
     }
   };
 
+  const ProtectedRoute = ({ children, authToken, isAdmin }) => {
+    if (!authToken || !isAdmin) {
+      return <Navigate to="/login" replace />;
+    }
+  
+    return children;
+  };
+
   return (
-    <Router>
-      <Routes>
-      <Route path="/" element={<Welcome setAuthToken={setAuthToken} setIsAdmin={setIsAdmin} authToken={authToken} isAdmin={isAdmin} setUsername={setUsername} />} />
-        <Route path="/auth" element={<AuthPage setAuthToken={setAuthToken} setIsAdmin={setIsAdmin} setUsername={setUsername} />} />
-        <Route path="/account" element={<Account authToken={authToken} />} />
-        <Route path="/game" element={
-          <Container>
-            <Box sx={{ textAlign: 'center', marginBottom: 4 }}>
-              <Typography variant="h2" sx={{ color: '#e65100', textShadow: '2px 2px 4px rgba(0,0,0,0.6)' }}>Dune Card Game Arena</Typography>
-              <Typography variant="h5" sx={{ color: '#e65100', textShadow: '2px 2px 4px rgba(0,0,0,0.6)' }}>Player {activePlayer}'s Turn</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', padding: 2, background: 'rgba(0, 0, 0, 0.5)', borderRadius: '10px' }}>
-              <Box>
-                <Typography variant="h4" sx={{ color: '#e65100' }}>Player 1</Typography>
-                <Select
-                  value={faction1}
-                  onChange={(e) => {
-                    setFaction1(e.target.value);
-                    selectDeck(1, e.target.value);
-                  }}
-                  displayEmpty
-                  sx={{ margin: 1, backgroundColor: '#673ab7', color: 'white' }}
-                >
-                  <MenuItem value="" disabled>Select Deck</MenuItem>
-                  {decks.map(deck => (
-                    <MenuItem key={deck} value={deck}>{deck}</MenuItem>
-                  ))}
-                </Select>
+    <Layout>
+        <Routes>
+        <Route path="/" element={<Welcome setAuthToken={setAuthToken} setIsAdmin={setIsAdmin} authToken={authToken} isAdmin={isAdmin} setUsername={setUsername} />} />
+          <Route path="/auth" element={<AuthPage setAuthToken={setAuthToken} setIsAdmin={setIsAdmin} setUsername={setUsername} />} />
+          <Route path="/account" element={<Account authToken={authToken} />} />
+          <Route path="/security-dashboard" 
+                element={
+                  <ProtectedRoute authToken={authToken} isAdmin={isAdmin}>
+                    <Box sx={{ height: '100vh', bgcolor: 'background.dark' }}>
+                      <UnifiedSecurityDashboard />
+                    </Box>
+                  </ProtectedRoute>
+          } />
+          <Route path="/game" element={
+            <Container>
+              <Box sx={{ textAlign: 'center', marginBottom: 4 }}>
+                <Typography variant="h2" sx={{ color: '#e65100', textShadow: '2px 2px 4px rgba(0,0,0,0.6)' }}>Dune Card Game Arena</Typography>
+                <Typography variant="h5" sx={{ color: '#e65100', textShadow: '2px 2px 4px rgba(0,0,0,0.6)' }}>Player {activePlayer}'s Turn</Typography>
               </Box>
-              <Box>
-                <Typography variant="h4" sx={{ color: '#e65100' }}>Player 2</Typography>
-                <Select
-                  value={faction2}
-                  onChange={(e) => {
-                    setFaction2(e.target.value);
-                    selectDeck(2, e.target.value);
-                  }}
-                  displayEmpty
-                  sx={{ margin: 1, backgroundColor: '#673ab7', color: 'white' }}
-                >
-                  <MenuItem value="" disabled>Select Deck</MenuItem>
-                  {decks.map(deck => (
-                    <MenuItem key={deck} value={deck}>{deck}</MenuItem>
-                  ))}
-                </Select>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', padding: 2, background: 'rgba(0, 0, 0, 0.5)', borderRadius: '10px' }}>
+                <Box>
+                  <Typography variant="h4" sx={{ color: '#e65100' }}>Player 1</Typography>
+                  <Select
+                    value={faction1}
+                    onChange={(e) => {
+                      setFaction1(e.target.value);
+                      selectDeck(1, e.target.value);
+                    }}
+                    displayEmpty
+                    sx={{ margin: 1, backgroundColor: '#673ab7', color: 'white' }}
+                  >
+                    <MenuItem value="" disabled>Select Deck</MenuItem>
+                    {decks.map(deck => (
+                      <MenuItem key={deck} value={deck}>{deck}</MenuItem>
+                    ))}
+                  </Select>
+                </Box>
+                <Box>
+                  <Typography variant="h4" sx={{ color: '#e65100' }}>Player 2</Typography>
+                  <Select
+                    value={faction2}
+                    onChange={(e) => {
+                      setFaction2(e.target.value);
+                      selectDeck(2, e.target.value);
+                    }}
+                    displayEmpty
+                    sx={{ margin: 1, backgroundColor: '#673ab7', color: 'white' }}
+                  >
+                    <MenuItem value="" disabled>Select Deck</MenuItem>
+                    {decks.map(deck => (
+                      <MenuItem key={deck} value={deck}>{deck}</MenuItem>
+                    ))}
+                  </Select>
+                </Box>
               </Box>
-            </Box>
-            <Arena 
-              player1Deck={player1Deck}
-              setPlayer1Deck={setPlayer1Deck} 
-              player2Deck={player2Deck}
-              setPlayer2Deck={setPlayer2Deck} 
-              playCard={playCard} 
-              selectTarget={selectTarget}
-              username="Player 1"
-              selectedCard={selectedCard}
-              setSelectedCard={setSelectedCard}
-              setTargetCard={setTargetCard}  
-              targetCard={targetCard} 
-              activePlayer={activePlayer}
-              setActivePlayer={setActivePlayer}
-              drawCard={drawCard} 
-              resolveAttack={resolveAttack}
-              endTurn={endTurn}
-            />
-          </Container>
-        } />
-        <Route path="/cards" element={<CardList />} />
-      </Routes>
-    </Router>
+              <Arena 
+                player1Deck={player1Deck}
+                setPlayer1Deck={setPlayer1Deck} 
+                player2Deck={player2Deck}
+                setPlayer2Deck={setPlayer2Deck} 
+                playCard={playCard} 
+                selectTarget={selectTarget}
+                username="Player 1"
+                selectedCard={selectedCard}
+                setSelectedCard={setSelectedCard}
+                setTargetCard={setTargetCard}  
+                targetCard={targetCard} 
+                activePlayer={activePlayer}
+                setActivePlayer={setActivePlayer}
+                drawCard={drawCard} 
+                resolveAttack={resolveAttack}
+                endTurn={endTurn}
+              />
+            </Container>
+          } />
+          <Route path="/cards" element={<CardList />} />
+        </Routes>
+    </Layout>
   );
 };
 
